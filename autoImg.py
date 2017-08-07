@@ -5,6 +5,7 @@ from PIL import Image,ImageDraw,ImageFont
 import cv2
 import imagehash
 import numpy as np
+import traceback
 
 
 class AutoImg:
@@ -214,6 +215,9 @@ class AutoImg:
 
     def imageText(self, ad, corner_mark, desc, doc):
         """Add corner_mark, desc, doc for ad"""
+        if len(desc) > 16 or len(doc) > 30:
+            return False, None
+
         mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)  #TODO warter mark should call self.waterMark function
         mask_gray = cv2.imread(corner_mark, 0)
         w_mask, h_mask = mask_gray.shape[::-1]
@@ -239,10 +243,14 @@ class AutoImg:
         im = Image.open('tuwen.png')
         draw = ImageDraw.Draw(im)
         draw.text(self.ad_desc_pos, desc, fill=self.ad_desc_color, font=ttfont) # desc could not be ''
-        draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
+        if len(doc) <= 15: # 15 utf-8 character in one line
+            draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
+        else:
+            draw.text(self.ad_doc_pos, doc[:15], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
+            draw.text(self.ad_doc_pos1, doc[15:], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
         im.save('tuwen.png')
 
-        return cv2.imread('tuwen.png')
+        return True, cv2.imread('tuwen.png')
 
     def header(self, time, battery, network):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
@@ -258,15 +266,6 @@ class AutoImg:
         img = cv2.imread(self.ad_area_path + 'margin_top_' + network + '.png')
 
         # Set battery
-        #battery_bottom_right = (621, 33)
-        #battery_top_left = (591, 17)
-        #battery_width = battery_bottom_right[0] - battery_top_left[0]
-        #battery_height = battery_bottom_right[1] - battery_top_left[1]
-        #battery_setting_width = int(battery_width * battery)
-        #img_battery = cv2.imread(self.ad_area_path + 'battery.png')
-        #img_battery = cv2.resize(img_battery, (battery_setting_width, battery_height))
-        #img[battery_top_left[1]:battery_bottom_right[1], battery_top_left[0]:battery_top_left[0]+battery_setting_width] = img_battery
-
         bc_bottom_right = (34, 20) # battery capacity position in battery
         bc_top_left = (4, 4) # battery capacity position in battery
         bc_width = bc_bottom_right[0] - bc_top_left[0]
@@ -366,7 +365,7 @@ class AutoImg:
             img_ad = self.warterMark(self.img_paste_ad, self.img_corner_mark)
             img_ad_resize = cv2.resize(img_ad, (self.ad_width, self.ad_height))
         else:
-            img_ad_resize = self.imageText(self.img_paste_ad, self.img_corner_mark, self.desc, self.doc)
+            _, img_ad_resize = self.imageText(self.img_paste_ad, self.img_corner_mark, self.desc, self.doc)
         left_side = (self.screen_width-self.ad_width)/2
         img_color[left[1]:left[1]+self.ad_height, left_side:left_side+self.ad_width] = img_ad_resize
 
@@ -382,7 +381,9 @@ class AutoImg:
 
 if __name__ == '__main__':
     try:
-        autoImg = AutoImg('16:20', 1, '车点点', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image-text', 'wifi', '以色列特价游', '上海往返特拉维夫3500元起')
+        title = '上海老公房8万翻新出豪宅感！'
+        doc = '输入你家房子面积，算一算装修该花多少钱？'
+        autoImg = AutoImg('16:20', 1, '车点点', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image-text', 'wifi', title, doc)
         autoImg.start()
     except Exception as e:
-        print('expet:' + repr(e))
+        traceback.print_exc()

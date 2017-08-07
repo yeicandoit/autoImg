@@ -6,10 +6,15 @@ import cv2
 import imagehash
 import numpy as np
 import traceback
+import ConfigParser
 
 
 class AutoImg:
-    def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png', ad_type='banner', network='wifi', desc='', doc=''):
+    def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
+                 ad_type='banner', network='wifi', desc='', doc=''):
+        self.cf = ConfigParser.ConfigParser()
+        self.cf.read('conf/H60-L11.conf')
+
         self.time = time
         self.battery = battery
         self.webcat_account = webcat_account.decode('utf-8')
@@ -21,23 +26,25 @@ class AutoImg:
         self.doc = doc.decode('utf-8')
 
         if 'banner' == ad_type:
-            self.ad_width = 660
-            self.ad_height = 188
-        if 'image-text' == ad_type:
-            self.ad_width = 656
-            self.ad_height = 178
-            self.ad_corner_width = 157
-            self.ad_corner_height = 42
-            self.ad_img_width = 178
-            self.ad_img_height = 178
-            self.ad_desc_pos = (209, 26)
-            self.ad_doc_pos = (209, 66)
-            self.ad_doc_pos1 = (209, 102)
-            self.ad_desc_color = (55, 55, 55)
-            self.ad_doc_color = (144, 144, 144)
-        if 'fine-big' == ad_type:
-            self.ad_width = 660
-            self.ad_height = 372
+            self.ad_width = self.cf.getint('banner', 'width')
+            self.ad_height = self.cf.getint('banner', 'height')
+        if 'image_text' == ad_type:
+            self.ad_width = self.cf.getint('image_text', 'width')
+            self.ad_height = self.cf.getint('image_text', 'height')
+            self.ad_corner_width = self.cf.getint('image_text', 'corner_width')
+            self.ad_corner_height = self.cf.getint('image_text', 'corner_height')
+            self.ad_img_width = self.cf.getint('image_text', 'img_width')
+            self.ad_img_height = self.cf.getint('image_text', 'img_height')
+            self.ad_desc_pos = (self.cf.getint('image_text', 'desc_pos_x'), self.cf.getint('image_text', 'desc_pos_y'))
+            self.ad_doc_pos = (self.cf.getint('image_text', 'doc_pos_x'), self.cf.getint('image_text', 'doc_pos_y'))
+            self.ad_doc_pos1 = (self.cf.getint('image_text', 'doc_pos1_x'), self.cf.getint('image_text', 'doc_pos1_y'))
+            desc_color = self.cf.getint('image_text', 'desc_color')
+            self.ad_desc_color = (desc_color, desc_color, desc_color)
+            doc_color = self.cf.getint('image_text', 'doc_color')
+            self.ad_doc_color = (doc_color, doc_color, doc_color)
+        if 'fine_big' == ad_type:
+            self.ad_width = self.cf.getint('fine_big', 'width')
+            self.ad_height = self.cf.getint('fine_big', 'height')
 
         self.composite_ads_path = 'composite_ads/'
         self.ad_area_path = 'ad_area/'
@@ -57,25 +64,25 @@ class AutoImg:
         self.GOOD_MESSAGE = 1
         self.WRITE_MESSAGE = 2
 
-        self.img_ad = cv2.imread(self.ad_area_path + 'template.png',0)
-        self.img_good_message = cv2.imread(self.ad_area_path + 'good_message.png', 0)
-        self.img_write_message = cv2.imread(self.ad_area_path + 'write_message.png', 0)
-        self.img_top = cv2.imread(self.ad_area_path + 'top.png', 0)
-        self.img_bottom = cv2.imread(self.ad_area_path + 'bottom.png', 0)
-        self.img_white_bkg = cv2.imread(self.ad_area_path + 'white_bkg.png')
-        self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad)))
+        self.img_ad_message = cv2.imread(self.cf.get('image_path', 'ad_message'), 0)
+        self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
+        self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
+        self.img_top = cv2.imread(self.cf.get('image_path', 'top'), 0)
+        self.img_bottom = cv2.imread(self.cf.get('image_path', 'bottom'), 0)
+        self.img_white_bkg = cv2.imread(self.cf.get('image_path', 'white_bkg'))
+        self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad_message)))
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
-        print "img_ad fingerprint: %s\nimg_good_message fingerprint: %s\nimg_write_message fingerprint:%s" \
+        print "img_ad_message fingerprint: %s\nimg_good_message fingerprint: %s\nimg_write_message fingerprint:%s" \
               %(self.fp_ad, self.fp_good_message, self.fp_write_message)
 
-        self.screen_width = 720
-        self.screen_height = 1280
-        self.ad_header_width = 720
-        self.ad_header_height = 50
+        self.screen_width = self.cf.getint('screen', 'width')
+        self.screen_height = self.cf.getint('screen', 'height')
+        self.ad_header_width = self.cf.getint('screen', 'header_width')
+        self.ad_header_height = self.cf.getint('screen', 'header_height')
         # All types of ad have the same distance between ad area and good_message/write_message
-        self.DISTANCE_GOOD_MESSAGE = 115
-        self.DISTANCE_WRITE_MESSAGE = 80
+        self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
+        self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
 
     def hammingDistOK(self, s1, s2):
         """ If the distance between image is smaller or equal to 3,
@@ -99,9 +106,9 @@ class AutoImg:
 
     def findAdAreaTop(self, img):
         """ Find the ad position """
-        crop, top_left, bottom_right = self.findMatched(img, self.img_ad)
+        crop, top_left, bottom_right = self.findMatched(img, self.img_ad_message)
         fp = str(imagehash.dhash(Image.fromarray(crop)))
-        print ("Found img_ad hash is:" + fp)
+        print ("Found img_ad_message hash is:" + fp)
         is_top = self.hammingDistOK(fp, self.fp_ad)
         return is_top, top_left, bottom_right
 
@@ -215,7 +222,7 @@ class AutoImg:
 
     def imageText(self, ad, corner_mark, desc, doc):
         """Add corner_mark, desc, doc for ad"""
-        if len(desc) > 16 or len(doc) > 30:
+        if len(desc) > self.cf.getint('image_text', 'desc_max_len') or len(doc) > self.cf.getint('image_text', 'doc_max_len'):
             return False, None
 
         mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)  #TODO warter mark should call self.waterMark function
@@ -234,40 +241,42 @@ class AutoImg:
         img_corner_mark = cv2.resize(final_img, (self.ad_corner_width, self.ad_corner_height))
 
         img_ad = cv2.imread(ad)
-        img_ad = cv2.resize(img_ad, (178, 178))
+        img_ad = cv2.resize(img_ad, (self.ad_img_width, self.ad_img_height))
         img = cv2.resize(self.img_white_bkg, (self.ad_width, self.ad_height))
         img[0:self.ad_height, 0:self.ad_height] = img_ad
         img[self.ad_height - self.ad_corner_height:self.ad_height, self.ad_width - self.ad_corner_width:self.ad_width] = img_corner_mark
         cv2.imwrite('tuwen.png', img) #TODO convert PIL image to Opencv image directly
-        ttfont = ImageFont.truetype("font/X1-55W.ttf", 30)
+        ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('image_text', 'font_size'))
         im = Image.open('tuwen.png')
         draw = ImageDraw.Draw(im)
         draw.text(self.ad_desc_pos, desc, fill=self.ad_desc_color, font=ttfont) # desc could not be ''
-        if len(doc) <= 15: # 15 utf-8 character in one line
+        doc_1stline_max_len = self.cf.getint('image_text', 'doc_1stline_max_len')
+        if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line
             draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
         else:
-            draw.text(self.ad_doc_pos, doc[:15], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
-            draw.text(self.ad_doc_pos1, doc[15:], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
+            draw.text(self.ad_doc_pos, doc[:doc_1stline_max_len], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
+            draw.text(self.ad_doc_pos1, doc[doc_1stline_max_len:], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
         im.save('tuwen.png')
 
         return True, cv2.imread('tuwen.png')
 
     def header(self, time, battery, network):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
-        #TODO set position in __init__ function
         if len(time) < 5:
             return False, None
-        if battery > 1 or battery < 0.2:
+        if battery > self.cf.getfloat('battery', 'capacity_max') or battery < self.cf.getfloat('battery', 'capacity_min'):
             return  False, None
         if network != '3G' and network != '4G' and network != 'wifi':
             return False, None
 
         # Set network
-        img = cv2.imread(self.ad_area_path + 'margin_top_' + network + '.png')
+        img = cv2.imread(self.cf.get('image_path', network))
+
+        # battery capacity position in battery
+        bc_bottom_right = (self.cf.getint('battery', 'capacity_bottom_right_x'), self.cf.getint('battery', 'capacity_bottom_right_y'))
+        bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
 
         # Set battery
-        bc_bottom_right = (34, 20) # battery capacity position in battery
-        bc_top_left = (4, 4) # battery capacity position in battery
         bc_width = bc_bottom_right[0] - bc_top_left[0]
         bc_height = bc_bottom_right[1] - bc_top_left[1]
         bc_setting_width = int(bc_width * battery)
@@ -275,33 +284,36 @@ class AutoImg:
         img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
         img_battery = cv2.imread(self.ad_area_path + 'battery.png')
         img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
-        # battery position is (586, 13), (627, 37), TODO set the position in __init__ function
-        img[14:38, 586:627] = img_battery
+        y = self.cf.getint('battery', 'top_left_y')
+        y1 = self.cf.getint('battery', 'bottom_right_y')
+        x = self.cf.getint('battery', 'top_left_x')
+        x1 = self.cf.getint('battery', 'bottom_right_x')
+        img[y:y1, x:x1] = img_battery
 
         # Set time
-        IMG_NUM_WIDTH = 16
-        IMG_NUM_HEIGHT = 24
-        IMG_COLON_WIDTH = 7
-        NUM_TOP_LEFT_WIDTH = 637
-        NUM_TOP_LEFT_HEIGHT = 14
+        IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
+        IMG_NUM_HEIGHT = self.cf.getint('time', 'num_height')
+        IMG_COLON_WIDTH = self.cf.getint('time', 'colon_width')
+        NUM_TOP_LEFT_WIDTH = self.cf.getint('time', 'top_left_x')
+        NUM_TOP_LEFT_HEIGHT = self.cf.getint('time', 'top_left_y')
 
         h = NUM_TOP_LEFT_HEIGHT
         h1 = NUM_TOP_LEFT_HEIGHT + IMG_NUM_HEIGHT
         w = NUM_TOP_LEFT_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.ad_area_path + time[0] + '.png')
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[0]))
         w = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.ad_area_path + time[1] + '.png')
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[1]))
         w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.ad_area_path + 'colon.png')
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', 'colon'))
         w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.ad_area_path + time[3] + '.png')
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[3]))
         w = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 4 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.ad_area_path + time[4] + '.png')
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[4]))
 
         return True, img
 
@@ -361,7 +373,7 @@ class AutoImg:
         img_color[left[1]:right[1], left[0]:right[0]] = img_blank_resize
 
         # Add our ad image
-        if 'image-text' != self.ad_type:
+        if 'image_text' != self.ad_type:
             img_ad = self.warterMark(self.img_paste_ad, self.img_corner_mark)
             img_ad_resize = cv2.resize(img_ad, (self.ad_width, self.ad_height))
         else:
@@ -383,7 +395,7 @@ if __name__ == '__main__':
     try:
         title = '上海老公房8万翻新出豪宅感！'
         doc = '输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = AutoImg('16:20', 1, '车点点', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image-text', 'wifi', title, doc)
+        autoImg = AutoImg('16:20', 1, '爱健身', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         autoImg.start()
     except Exception as e:
         traceback.print_exc()

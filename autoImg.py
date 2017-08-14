@@ -317,6 +317,21 @@ class AutoImg:
 
         return True, img
 
+    def clickTarget(self, target, type='name'):
+        cnt = 0;
+        while 1:
+            cnt = cnt + 1
+            if cnt == 10:
+                break
+            try:
+                self.driver.find_element_by_name(target).click()
+                break
+            except:
+                self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
+                        self.screen_height / 4)
+                self.driver.implicitly_wait(10)
+                continue
+
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(30) #Webcat may start slowly, so set waiting time to be long
@@ -324,7 +339,7 @@ class AutoImg:
         self.driver.implicitly_wait(10)
         self.driver.find_element_by_name(u"公众号").click()
         self.driver.implicitly_wait(10)
-        self.driver.find_element_by_name(self.webcat_account).click()
+        self.clickTarget(self.webcat_account)
         self.driver.implicitly_wait(10)
         self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
         self.driver.implicitly_wait(10)

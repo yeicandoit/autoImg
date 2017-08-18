@@ -11,7 +11,7 @@ import argparse
 
 class AutoImg:
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc=''):
+                 ad_type='banner', network='wifi', desc='', doc='', save_path='./'):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read('conf/H60-L11.conf')
 
@@ -46,7 +46,7 @@ class AutoImg:
             self.ad_width = self.cf.getint('fine_big', 'width')
             self.ad_height = self.cf.getint('fine_big', 'height')
 
-        self.composite_ads_path = 'composite_ads/'
+        self.composite_ads_path = save_path
         self.ad_area_path = 'ad_area/'
 
         self.desired_caps = {
@@ -401,7 +401,7 @@ class AutoImg:
         if ok:
             img_color[0:self.ad_header_height, 0:self.ad_header_width] = img_header
 
-        cv2.imwrite(self.composite_ads_path + 'screenshot-ad.png', img_color)
+        cv2.imwrite(self.composite_ads_path, img_color)
 
         sleep(3)
         self.driver.quit()

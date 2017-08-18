@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # coding=utf-8
 
 import poplib
@@ -15,7 +14,7 @@ def decode_str(s):
         value = value.decode(charset)
     return value
 
-def get_mails(prefix):
+def get_mails(prefix, demand_day):
     host = 'imap.exmail.qq.com'
     username = 'wangqiang@optaim.com'
     password = 'Zhiyunzhong6868'
@@ -36,10 +35,10 @@ def get_mails(prefix):
         subject = decode_str(subject)
         print subject
         date1 = time.strptime(message.get("Date")[0:24], '%a, %d %b %Y %H:%M:%S')  # 格式化收件时间
-        date2 = time.strftime("%Y-%m-%d:%H", date1)
+        date2 = time.strftime("%Y-%m-%d", date1)
         print date2
         #如果标题匹配
-        if subject and subject[:len(prefix)] == prefix:
+        if subject and subject[:len(prefix)] == prefix and date2 == demand_day:
             value = message.get('From')
             if value:
                 hdr, addr = parseaddr(value)
@@ -56,9 +55,11 @@ def get_mails(prefix):
                         data = part.get_payload(decode=True)
                         fEx.write(data)
                         print "Has saved attachment:", fileName
-            #Have loaded the related ad resource
-            break
+                        #Have loaded the related ad resource
+                        server.quit()
+                        return True
     server.quit()
+    return  False
 
 if __name__ == '__main__':
     get_mails('test_email')

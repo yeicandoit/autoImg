@@ -4,6 +4,10 @@ import poplib
 from email.parser import Parser
 from email.header import decode_header
 from email.utils import parseaddr
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 import time
 
 def decode_str(s):
@@ -61,5 +65,24 @@ def get_mails(prefix, demand_day):
     server.quit()
     return  False
 
+def send_email(file, to):
+    user = "wangqiang@optaim.com"
+    pwd = "Zhiyunzhong6868"
+
+    msg = MIMEMultipart()
+    msg["Subject"] = "自动P图"
+    msg["From"] = user
+    msg["To"] = to
+
+    part = MIMEApplication(open(file, 'rb').read())
+    part.add_header('Content-Disposition', 'attachment', filename=file)
+    msg.attach(part)
+
+    s = smtplib.SMTP("smtp.exmail.qq.com", timeout=30)  # 连接smtp邮件服务器,端口默认是25
+    s.login(user, pwd)  # 登陆服务器
+    s.sendmail(user, to, msg.as_string())  # 发送邮件
+    s.close()
+
 if __name__ == '__main__':
-    get_mails('test_email')
+    #get_mails('test_email')
+    send_email("ads/4.jpg", "wangqiang@optaim.com")

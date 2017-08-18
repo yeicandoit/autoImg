@@ -4,6 +4,11 @@ import autoImg
 import ConfigParser
 import time
 
+def run_shell(cmd):
+    if 0 != os.system(cmd):
+        print "Execute " + cmd + " error, exit"
+        exit(0)
+
 today = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 if myEmail.get_mails('test_email', today) == False:
     print 'Find no ad demand today, exit!!'
@@ -11,10 +16,9 @@ if myEmail.get_mails('test_email', today) == False:
 
 ad_demand_zip = "ad_demand.zip"
 ad_return = today + "_ad"
+ad_return_zip = ad_return + '.zip'
 cmd = "unzip " + ad_demand_zip + "; mkdir -p " + ad_return
-if 0 != os.system(cmd):
-    print "Execute " + cmd + " error, exit"
-    exit(0)
+run_shell(cmd)
 
 cf = ConfigParser.ConfigParser()
 conf_path = "ad_demand/demand"
@@ -33,7 +37,10 @@ for sec in cf.sections():
     ai = autoImg.AutoImg(time, battory, webaccount, ad, corner, type, network, title, doc, savePath)
     ai.start()
 
-cmd = "mv " + today + "* finished/; rm ad_demand.zip; rm *.png; mv ad_demand finished/" + today
-if 0 != os.system(cmd):
-    print "Execute " + cmd + " error, exit"
-    exit(0)
+cmd = "zip -r " + ad_return_zip + " " + ad_return
+run_shell(cmd)
+myEmail.send_email(ad_return_zip, 'wangqiang@optaim.com')
+
+cmd = "rm " + ad_return_zip + " *.png ad_demand.zip; mv " + ad_return + " finished/; mv ad_demand finished/" + today
+run_shell(cmd)
+

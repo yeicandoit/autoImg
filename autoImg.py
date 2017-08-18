@@ -11,7 +11,7 @@ import argparse
 
 class AutoImg:
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc='', save_path='./'):
+                 ad_type='banner', network='wifi', desc='', doc='', save_path='./ok.png'):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read('conf/H60-L11.conf')
 
@@ -188,6 +188,9 @@ class AutoImg:
                 self.driver.get_screenshot_as_file("screenshot-above.png")
                 img = cv2.imread('screenshot-above.png', 0)
                 is_top, top_left, bottom_right = self.findAdAreaTop(img)
+                #The following comment line is useful to debug, do not remove.
+                # cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+                #cv2.imwrite('./test.png', img)
                 assert is_top, "Should contain ad top area"
                 # Find ad above area
                 img_top_crop, img_top_left, img_top_right = self.findMatched(img, self.img_top)

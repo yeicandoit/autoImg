@@ -23,19 +23,19 @@ def get_mails(prefix):
     server = poplib.POP3(host)
     server.user(username)
     server.pass_(password)
-    # 获得邮件
+    # 获取最新的100封邮件
     num = len(server.list()[1])
-    print num
-    messages = [server.retr(i) for i in range(num, num+1)]
-    print '----------------------------'
-    messages = [b'\r\n'.join(mssg[1]) for mssg in messages]
-    messages = [Parser().parsestr(mssg) for mssg in messages]
-    print("===="*10)
-    messages = messages[::-1]
-    for message in messages:
+    print 'email total num:', num
+    for i in range(num, num - 100, -1):
+        print i
+        messages = [server.retr(i) for i in range(i, i+1)]
+        messages = [b'\r\n'.join(mssg[1]) for mssg in messages]
+        messages = [Parser().parsestr(mssg) for mssg in messages]
+        message = messages[0]
         subject = message.get('Subject')
         subject = decode_str(subject)
-        date1 = time.strptime(message.get("Date")   [0:24], '%a, %d %b %Y %H:%M:%S')  # 格式化收件时间
+        print subject
+        date1 = time.strptime(message.get("Date")[0:24], '%a, %d %b %Y %H:%M:%S')  # 格式化收件时间
         date2 = time.strftime("%Y-%m-%d:%H", date1)
         print date2
         #如果标题匹配
@@ -55,9 +55,10 @@ def get_mails(prefix):
                     with open(fileName, 'wb') as fEx:
                         data = part.get_payload(decode=True)
                         fEx.write(data)
-                        print("附件%s已保存" % fileName)
+                        print "Has saved attachment:", fileName
+            #Have loaded the related ad resource
+            break
     server.quit()
 
 if __name__ == '__main__':
-    #prefix = input("输入要下载的邮件标题的前缀:")
     get_mails('test_email')

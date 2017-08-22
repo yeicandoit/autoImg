@@ -22,18 +22,22 @@
     <form action="/savedemand" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div>
-            <label>app:</label>
-            <select name="app">
+            <span width="100px"><label>app:</label></span>
+            <span>
+                <select name="app">
                 <option value="weixin">微信</option>
-            </select>
+                </select>
+            </span>
         </div>
         <div>
-            <label>广告类型:</label>
+            <span width="100px"><label>广告类型:</label></span>
+            <span>
             <select name="adType">
                 <option value='banner'>横幅</option>
                 <option value='image_text'>图文</option>
                 <option value='fine_big'>优雅大图</option>
             </select>
+            </span>
         </div>
         <div>
             <label>上传广告:</label>
@@ -42,6 +46,14 @@
         <div>
             <label>上传角标:</label> &nbsp;&nbsp;<font size="2" color="#D2D460">若不上传，则使用默认角标</font>
             <input type="file" name="adCornerImg">
+        </div>
+        <div>
+            <label>标题:</label>
+            <input type="text" name="title">
+        </div>
+        <div>
+            <label>文案:</label>
+            <input type="text" name="doc">
         </div>
         <div>
             <label>公众号类型:</label>

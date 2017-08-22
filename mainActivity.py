@@ -1,46 +1,62 @@
+# -*- coding: utf-8 -*-
 import os
 import myEmail
 import autoImg
-import ConfigParser
 import time
+import sqlite3
+import random
 
 def run_shell(cmd):
     if 0 != os.system(cmd):
         print "Execute " + cmd + " error, exit"
         exit(0)
 
+dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '车云']}
+
+#Get ad demand from email
 today = time.strftime('%Y-%m-%d',time.localtime(time.time()))
-if myEmail.get_mails('test_email', today) == False:
-    print 'Find no ad demand today, exit!!'
-    exit(0)
 
-ad_demand_zip = "ad_demand.zip"
-ad_return = today + "_ad"
-ad_return_zip = ad_return + '.zip'
-cmd = "unzip " + ad_demand_zip + "; mkdir -p " + ad_return
-run_shell(cmd)
+#Sqlite saved the ad demand
+conn = sqlite3.connect('webAutoImg/db.sqlite3')
+cc = conn.cursor()
+print 'Opened database successfully'
+cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id '
+                    'from autoimage_addemand where date ="' + today + '" and status = 0')
 
-cf = ConfigParser.ConfigParser()
-conf_path = "ad_demand/demand"
-cf.read(conf_path);
-for sec in cf.sections():
-    time = cf.get(sec, 'time')
-    battory = cf.getfloat(sec, 'battory')
-    webaccount = cf.get(sec, 'webaccount')
-    ad = cf.get(sec, 'ad')
-    corner = cf.get(sec, 'corner')
-    type = cf.get(sec, 'type')
-    network = cf.get(sec, 'network')
-    title = cf.get(sec, 'title')
-    doc = cf.get(sec, 'doc')
-    savePath = ad_return + '/' +  sec + '.png'
-    ai = autoImg.AutoImg(time, battory, webaccount, ad, corner, type, network, title, doc, savePath)
-    ai.start()
+for row in cursor:
+    app = row[0]
 
-cmd = "zip -r " + ad_return_zip + " " + ad_return
-run_shell(cmd)
-myEmail.send_email(ad_return_zip, 'wangqiang@optaim.com')
+    if 'weixin' == app:
+        adType = row[1]
+        adImg ='webAutoImg/media/' + row[2]
+        adCornerImg = 'webAutoImg/media/' + row[3]
+        wcType = row[4]
+        network = row[5]
+        time = row[6]
+        battery = row[7]
+        title = row[8]
+        doc = row[9]
+        tId = row[10]
+        savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
+        tPath = 'composite/' + today + '-' + str(tId) + '.png'
 
-cmd = "rm " + ad_return_zip + " *.png ad_demand.zip; mv " + ad_return + " finished/; mv ad_demand finished/" + today
-run_shell(cmd)
+        was = dictWebAccount.get(wcType)
+        wa = was[random.randint(0, len(was)-1)]
+        ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, doc, title, savepath)
+        if ai.compositeImage():
+            print "composite image OK!!!"
+            cc.execute('update autoimage_addemand set compositeImage = "' +
+                       tPath + '", status = 1 where id = ' + str(tId))
+            conn.commit()
+        else:
+            print "Failed to composite image"
+    else:
+        print 'Only support weixin now'
+
+conn.close()
+#myEmail.send_email(ad_return_zip, 'wangqiang@optaim.com')
+
+#Remove files useless, move ads to specified dir.
+#cmd = "rm " + ad_return_zip + " *.png ad_demand.zip; mv " + ad_return + " finished/; mv ad_demand finished/" + today
+#run_shell(cmd)
 

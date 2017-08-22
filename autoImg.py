@@ -408,6 +408,14 @@ class AutoImg:
 
         sleep(3)
         self.driver.quit()
+    def compositeImage(self):
+        try:
+            self.start()
+            return True
+        except Exception as e:
+            traceback.print_exc()
+            return False
+
 
 if __name__ == '__main__':
     try:

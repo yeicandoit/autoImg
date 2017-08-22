@@ -16,3 +16,5 @@ class AdDemand(models.Model):
     time = models.CharField(max_length=64)
     battery = models.FloatField(null=True)
     date = models.DateField()
+    status = models.IntegerField()
+    compositeImage = models.ImageField(null=True)

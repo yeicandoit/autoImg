@@ -29,4 +29,5 @@ urlpatterns = [
     url(r'^upload', upload),
     url(r'^show', show),
     url(r'^savedemand', savedemand),
+    #url(r'^media/(?P<path>.*)', 'django.views.static.serve', {'document_root':'/Users/iclick/wangqiang/autoImg/webAutoImg/media/'}),
 ]

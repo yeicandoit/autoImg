@@ -16,10 +16,17 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 
+from uploadpic.views import show
+from uploadpic.views import upload
+from autoimage.views import savedemand
+
 from . import view
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^index/', view.hello),
     url(r'^autoimage', view.imageDemand),
+    url(r'^upload', upload),
+    url(r'^show', show),
+    url(r'^savedemand', savedemand),
 ]

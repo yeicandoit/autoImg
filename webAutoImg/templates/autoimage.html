@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body{
+            //background:#D2D460;
+            //text-align:center
+        }
+        .label_width{
+            width: 250px
+        }
+        .ad_demand{
+            width:500px
+        }
+
+    </style>
+    <meta charset="UTF-8">
+    <title>这是一个HTML5的网页</title>
+</head>
+<body>
+    <form action="/savedemand" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            <label>app:</label>
+            <select name="app">
+                <option value="weixin">微信</option>
+            </select>
+        </div>
+        <div>
+            <label>广告类型:</label>
+            <select name="adType">
+                <option value='banner'>横幅</option>
+                <option value='image_text'>图文</option>
+                <option value='fine_big'>优雅大图</option>
+            </select>
+        </div>
+        <div>
+            <label>上传广告:</label>
+            <input type="file" name="adImg">
+        </div>
+        <div>
+            <label>上传角标:</label> &nbsp;&nbsp;<font size="2" color="#D2D460">若不上传，则使用默认角标</font>
+            <input type="file" name="adCornerImg">
+        </div>
+        <div>
+            <label>公众号类型:</label>
+            <select name="wcType">
+                <option value="car">汽车</option>
+            </select>
+        </div>
+        <div>
+            <label>网络类型:</label>
+            <select name="network">
+                <option value='wifi'>wifi</option>
+                <option value='3G'>3G</option>
+                <option value='4G'>4G</option>
+            </select>
+        </div>
+        <div>
+            <label>时间:</label>
+            <input type="text" name="time">
+        </div>
+        <div>
+            <label>电量:</label>
+            <select name="battery">
+                <option value="0.3">0.3</option>
+                <option value="0.4">0.4</option>
+                <option value="0.5">0.5</option>
+                <option value="0.6">0.6</option>
+                <option value="0.7">0.7</option>
+                <option value="0.8">0.8</option>
+                <option value="0.9">0.9</option>
+                <option value="1.0">1.0</option>
+            </select>
+        </div>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+    <p>{{ rlt }}</p>
+</body>
+</html>

@@ -20,6 +20,7 @@ from uploadpic.views import show
 from uploadpic.views import upload
 from autoimage.views import savedemand
 from autoimage.views import index
+from autoimage.views import showimages
 
 from django.conf.urls.static import static
 from django.conf import settings
@@ -31,7 +32,7 @@ urlpatterns = [
     url(r'^index/', index),
     url(r'^autoimage', view.imageDemand),
     url(r'^upload', upload),
-    url(r'^show', show),
+    url(r'^show$', show),
     url(r'^savedemand', savedemand),
-    #url(r'^media/(?P<path>.*)', 'django.views.static.serve', {'document_root':'/Users/iclick/wangqiang/autoImg/webAutoImg/media/'}),
+    url(r'^showimages', showimages),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

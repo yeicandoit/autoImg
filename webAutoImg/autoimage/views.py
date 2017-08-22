@@ -2,8 +2,9 @@
 from __future__ import unicode_literals
 
 from django.shortcuts import render
+from django.shortcuts import redirect
 from autoimage.models import AdDemand
-from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 import datetime
 
 # Create your views here.
@@ -46,4 +47,12 @@ def savedemand(request):
                       title=ad_title, doc=ad_doc, date=datetime.date.today().strftime('%Y-%m-%d'),
                       status=0)
     demand.save()
-    return HttpResponse("上传成功!!!")
+    return HttpResponseRedirect('/showimages')
+
+def showimages(request):
+    imgs = AdDemand.objects.filter(date = datetime.date.today().strftime('%Y-%m-%d'))
+    context = {
+        'imgs':imgs,
+    }
+
+    return render(request, 'autoimage/showimages.html', context)

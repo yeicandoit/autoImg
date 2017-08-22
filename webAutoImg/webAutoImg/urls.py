@@ -19,6 +19,8 @@ from django.contrib import admin
 from uploadpic.views import show
 from uploadpic.views import upload
 from autoimage.views import savedemand
+from autoimage.views import index
+
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -26,7 +28,7 @@ from . import view
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^index/', view.hello),
+    url(r'^index/', index),
     url(r'^autoimage', view.imageDemand),
     url(r'^upload', upload),
     url(r'^show', show),

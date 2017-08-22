@@ -7,6 +7,10 @@ from django.http import HttpResponse
 import datetime
 
 # Create your views here.
+def index(request):
+    context = {}
+    return render(request, 'autoimage/autoimage.html', context)
+
 def savedemand(request):
     m_post = request.POST
 
@@ -18,7 +22,11 @@ def savedemand(request):
     ad_title = m_post['title']
     ad_time = m_post['time']
     if None == ad_img:
-        return HttpResponse('请上传广告')
+        context = {
+            'color': 'red',
+            'info': '请上传广告!!!',
+        }
+        return render(request, 'autoimage/autoimage.html', context)
     if None == ad_corner_img:
         ad_corner_img = 'ad_default/corner-mark.png'
     if None == ad_doc:
@@ -26,7 +34,11 @@ def savedemand(request):
     if None == ad_title:
         ad_title = ''
     if '' == ad_time:
-        return HttpResponse("请设置时间")
+        context = {
+            'color':'red',
+            'info':'请设置时间!!!'
+        }
+        return render(request, 'autoimage/autoimage.html', context)
 
     demand = AdDemand(app=m_post['app'], adType=m_post['adType'], adImg=ad_img,
                       adCornerImg=ad_corner_img, wcType=m_post['wcType'],

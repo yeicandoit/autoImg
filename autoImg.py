@@ -348,7 +348,7 @@ class AutoImg:
         el = self.clickTarget(self.webcat_account)
         self.driver.implicitly_wait(10)
         action = TouchAction(self.driver)
-        action.tap(el, self.cf.get('article_pos', 'x'), self.cf.get('article_pos', 'y')).perform()
+        action.tap(el, self.cf.getint('article_pos', 'x'), self.cf.getint('article_pos', 'y')).perform()
         #self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
         sleep(1)
 

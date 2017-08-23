@@ -51,12 +51,12 @@ def ptu():
                            tPath + '", status = 1 where id = ' + str(tId))
                 conn.commit()
             else:
-                content = 'Failed ad info is app:' + app + '; 广告类型:'.decode('utf-8') + adType \
-                          + '; 广告:'.decode('utf-8') + adImg + '; 角标:'.decode('utf-8') + adCornerImg \
-                          + '; 公众号:'.decode('utf-8') + wa + '; 网络:'.decode('utf-8') + network \
-                          + '; 时间:'.decode('utf-8') + time + '; 电量:'.decode('utf-8') + str(battery) \
-                          + '; 标题:'.decode('utf-8') + title + '; 文案:'.decode('utf-8') + doc \
-                          + '; sqlite id:' + str(tId) + '; 第一行文案长度:'.decode('utf-8') + str(doc1stLine)
+                content = 'Failed ad info is<br> app:' + app + '<br> 广告类型:'.decode('utf-8') + adType \
+                          + '<br> 广告:'.decode('utf-8') + adImg + '<br> 角标:'.decode('utf-8') + adCornerImg \
+                          + '<br> 公众号:'.decode('utf-8') + wa.decode('utf-8') + '<br> 网络:'.decode('utf-8') + network \
+                          + '<br> 时间:'.decode('utf-8') + time + '<br> 电量:'.decode('utf-8') + str(battery) \
+                          + '<br> 标题:'.decode('utf-8') + title + '<br> 文案:'.decode('utf-8') + doc \
+                          + '<br> sqlite id:' + str(tId) + '<br> 第一行文案长度:'.decode('utf-8') + str(doc1stLine)
                 myEmail.send_email('wangqiang@optaim.com', content)
                 print "Failed to composite image"
         else:

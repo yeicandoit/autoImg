@@ -42,7 +42,7 @@ for row in cursor:
 
         was = dictWebAccount.get(wcType)
         wa = was[random.randint(0, len(was)-1)]
-        ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, doc, title, savepath)
+        ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, title, doc, savepath)
         if ai.compositeImage():
             print "composite image OK!!!"
             cc.execute('update autoimage_addemand set compositeImage = "' +

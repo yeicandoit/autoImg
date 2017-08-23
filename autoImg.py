@@ -22,8 +22,10 @@ class AutoImg:
         self.img_corner_mark = img_corner_mark
         self.ad_type = ad_type
         self.network = network
-        self.desc = desc.decode('utf-8')
-        self.doc = doc.decode('utf-8')
+        #self.desc = desc.decode('utf-8')
+        #self.doc = doc.decode('utf-8')
+        self.desc = desc
+        self.doc = doc
 
         if 'banner' == ad_type:
             self.ad_width = self.cf.getint('banner', 'width')

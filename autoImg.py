@@ -350,7 +350,7 @@ class AutoImg:
         action = TouchAction(self.driver)
         action.tap(el, self.cf.get('article_pos', 'x'), self.cf.get('article_pos', 'y')).perform()
         #self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
-        self.driver.implicitly_wait(10)
+        sleep(1)
 
         ad_bottom_type, left, right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
                         self.screen_height / 4)
@@ -419,6 +419,7 @@ class AutoImg:
             return True
         except Exception as e:
             traceback.print_exc()
+            self.driver.quit()
             return False
 
 

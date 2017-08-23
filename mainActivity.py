@@ -11,7 +11,7 @@ def run_shell(cmd):
         print "Execute " + cmd + " error, exit"
         exit(0)
 
-dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '车云']}
+dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活']}
 
 #Get ad demand from email
 today = time.strftime('%Y-%m-%d',time.localtime(time.time()))

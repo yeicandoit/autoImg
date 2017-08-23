@@ -8,6 +8,7 @@ import numpy as np
 import traceback
 import ConfigParser
 import argparse
+from appium.webdriver.common.touch_action import TouchAction
 
 class AutoImg:
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
@@ -329,7 +330,7 @@ class AutoImg:
             if cnt == 10:
                 break
             try:
-                self.driver.find_element_by_name(target).click()
+                return self.driver.find_element_by_name(target).click()
                 break
             except:
                 self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
@@ -344,9 +345,11 @@ class AutoImg:
         self.driver.implicitly_wait(10)
         self.driver.find_element_by_name(u"公众号").click()
         self.driver.implicitly_wait(10)
-        self.clickTarget(self.webcat_account)
+        el = self.clickTarget(self.webcat_account)
         self.driver.implicitly_wait(10)
-        self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
+        action = TouchAction(self.driver)
+        action.tap(el, self.cf.get('article_pos', 'x'), self.cf.get('article_pos', 'y')).perform()
+        #self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
         self.driver.implicitly_wait(10)
 
         ad_bottom_type, left, right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,

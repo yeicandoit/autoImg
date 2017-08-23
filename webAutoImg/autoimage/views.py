@@ -45,7 +45,7 @@ def savedemand(request):
                       adCornerImg=ad_corner_img, wcType=m_post['wcType'],
                       network=m_post['network'], time=ad_time, battery=float(m_post['battery']),
                       title=ad_title, doc=ad_doc, date=datetime.date.today().strftime('%Y-%m-%d'),
-                      status=0)
+                      status=0, doc1stLine=int(m_post['doc1stLine']))
     demand.save()
     return HttpResponseRedirect('/showimages')
 

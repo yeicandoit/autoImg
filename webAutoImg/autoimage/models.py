@@ -18,3 +18,4 @@ class AdDemand(models.Model):
     date = models.DateField()
     status = models.IntegerField()
     compositeImage = models.ImageField(null=True)
+    doc1stLine = models.IntegerField(null=True)

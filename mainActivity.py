@@ -22,8 +22,8 @@ def ptu():
     conn = sqlite3.connect('webAutoImg/db.sqlite3')
     cc = conn.cursor()
     print 'Opened database successfully'
-    cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id '
-                        'from autoimage_addemand where date ="' + today + '" and status = 0')
+    cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id, '
+                        'doc1stLine from autoimage_addemand where date ="' + today + '" and status = 0')
 
     for row in cursor:
         app = row[0]
@@ -38,12 +38,13 @@ def ptu():
             title = row[8]
             doc = row[9]
             tId = row[10]
+            doc1stLine = row[11]
             savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
             tPath = 'composite/' + today + '-' + str(tId) + '.png'
 
             was = dictWebAccount.get(wcType)
             wa = was[random.randint(0, len(was)-1)]
-            ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, title, doc, savepath)
+            ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, title, doc, doc1stLine, savepath)
             if ai.compositeImage():
                 print "composite image OK!!!"
                 cc.execute('update autoimage_addemand set compositeImage = "' +
@@ -55,7 +56,7 @@ def ptu():
                           + ' 公众号类型:'.decode('utf-8') + wcType + ' 网络:'.decode('utf-8') + network \
                           + ' 时间:'.decode('utf-8') + time + ' 电量:'.decode('utf-8') + str(battery) \
                           + ' 标题:'.decode('utf-8') + title + ' 文案:'.decode('utf-8') + doc \
-                          + ' sqlite id:' + str(tId)
+                          + ' sqlite id:' + str(tId) + ' 第一行文案长度:'.decode('utf-8') + str(doc1stLine)
                 myEmail.send_email('wangqiang@optaim.com', content)
                 print "Failed to composite image"
         else:

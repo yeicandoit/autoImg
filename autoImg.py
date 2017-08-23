@@ -12,7 +12,7 @@ from appium.webdriver.common.touch_action import TouchAction
 
 class AutoImg:
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc='', save_path='./ok.png'):
+                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read('conf/H60-L11.conf')
 
@@ -27,6 +27,7 @@ class AutoImg:
         #self.doc = doc.decode('utf-8')
         self.desc = desc
         self.doc = doc
+        self.doc1st_line = doc1st_line
 
         if 'banner' == ad_type:
             self.ad_width = self.cf.getint('banner', 'width')
@@ -256,7 +257,7 @@ class AutoImg:
         im = Image.open('tuwen.png')
         draw = ImageDraw.Draw(im)
         draw.text(self.ad_desc_pos, desc, fill=self.ad_desc_color, font=ttfont) # desc could not be ''
-        doc_1stline_max_len = self.cf.getint('image_text', 'doc_1stline_max_len')
+        doc_1stline_max_len = self.doc1st_line
         if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line
             draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
         else:

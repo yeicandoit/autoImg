@@ -229,8 +229,10 @@ class AutoImg:
 
     def imageText(self, ad, corner_mark, desc, doc):
         """Add corner_mark, desc, doc for ad"""
-        if len(desc) > self.cf.getint('image_text', 'desc_max_len') or len(doc) > self.cf.getint('image_text', 'doc_max_len'):
-            return False, None
+        if len(desc) > self.cf.getint('image_text', 'desc_max_len'):
+            desc = desc[0:self.cf.getint('image_text', 'desc_max_len')]
+        if len(doc) > self.cf.getint('image_text', 'doc_max_len'):
+            doc = doc[0:self.cf.getint('image_text', 'doc_max_len')]
 
         mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)  #TODO warter mark should call self.waterMark function
         mask_gray = cv2.imread(corner_mark, 0)

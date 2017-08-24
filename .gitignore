@@ -1,0 +1,4 @@
+*.pyc
+autoimage/*.pyc
+autoimage/migrations/*.pyc
+uploadpic/migrations/*.pyc

@@ -259,8 +259,11 @@ class AutoImg:
         im = Image.open('tuwen.png')
         draw = ImageDraw.Draw(im)
         draw.text(self.ad_desc_pos, desc, fill=self.ad_desc_color, font=ttfont) # desc could not be ''
-        doc_1stline_max_len = self.doc1st_line
-        if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line
+        if self.doc1st_line > 0:
+            doc_1stline_max_len = self.doc1st_line
+        else:
+            doc_1stline_max_len = self.set1stDocLen(doc)
+        if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line should be OK usually
             draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
         else:
             draw.text(self.ad_doc_pos, doc[:doc_1stline_max_len], fill=self.ad_doc_color, font=ttfont)  # doc could not be ''
@@ -268,6 +271,23 @@ class AutoImg:
         im.save('tuwen.png')
 
         return True, cv2.imread('tuwen.png')
+
+    def set1stDocLen(self, doc):
+        cl = self.cf.getint('image_text', 'doc_Chinese_width')
+        el = self.cf.getint('image_text', 'doc_English_width')
+        fl = self.cf.getint('image_text', 'doc_1stline_px_len')
+        mlen = 0
+        for i in range(len(doc)):
+            if doc[i] <= '\u2000':
+                mlen += el
+            # I think Chinese and Chinese punctuation(eg:，。：) consume doc_Chinese_width length px
+            else:
+                mlen += cl
+            if mlen > fl:
+                print 'doc first line len is:', i
+                return i
+
+        return len(doc)
 
     def header(self, time, battery, network):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""

@@ -40,12 +40,16 @@ def savedemand(request):
             'info':'请设置时间!!!'
         }
         return render(request, 'autoimage/autoimage.html', context)
+    if None == m_post['doc1stLine'] or '' == m_post['doc1stLine']:
+        doc_1st_line = -1
+    else:
+        doc_1st_line = int(m_post['doc1stLine'])
 
     demand = AdDemand(app=m_post['app'], adType=m_post['adType'], adImg=ad_img,
                       adCornerImg=ad_corner_img, wcType=m_post['wcType'],
                       network=m_post['network'], time=ad_time, battery=float(m_post['battery']),
                       title=ad_title, doc=ad_doc, date=datetime.date.today().strftime('%Y-%m-%d'),
-                      status=0, doc1stLine=int(m_post['doc1stLine']))
+                      status=0, doc1stLine=doc_1st_line)
     demand.save()
     return HttpResponseRedirect('/showimages')
 

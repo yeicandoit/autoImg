@@ -2,10 +2,11 @@
 from __future__ import unicode_literals
 
 from django.shortcuts import render
-from django.shortcuts import redirect
 from autoimage.models import AdDemand
 from django.http import HttpResponseRedirect
 import datetime
+import time
+import os
 
 # Create your views here.
 def index(request):
@@ -50,6 +51,10 @@ def savedemand(request):
                       network=m_post['network'], time=ad_time, battery=float(m_post['battery']),
                       title=ad_title, doc=ad_doc, date=datetime.date.today().strftime('%Y-%m-%d'),
                       status=0, doc1stLine=doc_1st_line)
+    ext = '-ad' + os.path.splitext(demand.adImg.name)[1]
+    demand.adImg.name = time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime(time.time())) + ext
+    if demand.adCornerImg.name != 'ad_default/corner-mark.png':
+        demand.adCornerImg.name = 'corner-mark.png'
     demand.save()
     return HttpResponseRedirect('/showimages')
 

@@ -41,6 +41,20 @@ def savedemand(request):
             'info':'请设置时间!!!'
         }
         return render(request, 'autoimage/autoimage.html', context)
+    else:
+        #时间举例(要用英文输入法输入)：09:01, 18:56
+        ok = True
+        if 5 != len(ad_time):
+            ok = False
+        for ch in ad_time:
+            if ch < '\u0030' or ch > '\u003a':
+                ok = False
+        if False == ok:
+            context = {
+                'color': 'red',
+                'info': '时间格式不正确!!!'
+            }
+            return render(request, 'autoimage/autoimage.html', context)
     if None == m_post['doc1stLine'] or '' == m_post['doc1stLine']:
         doc_1st_line = -1
     else:

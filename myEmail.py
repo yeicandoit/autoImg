@@ -9,6 +9,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import time
+import logging
+logger = logging.getLogger('main.myEmail')
 
 def decode_str(s):
     if not s:
@@ -28,19 +30,18 @@ def get_mails(prefix, demand_day):
     server.pass_(password)
     # 获取最新的100封邮件
     num = len(server.list()[1])
-    print 'email total num:', num
+    logger.debug('email total num:%d', num)
     for i in range(num, num - 100, -1):
-        print i
         messages = [server.retr(i) for i in range(i, i+1)]
         messages = [b'\r\n'.join(mssg[1]) for mssg in messages]
         messages = [Parser().parsestr(mssg) for mssg in messages]
         message = messages[0]
         subject = message.get('Subject')
         subject = decode_str(subject)
-        print subject
+        logger.debug(subject)
         date1 = time.strptime(message.get("Date")[0:24], '%a, %d %b %Y %H:%M:%S')  # 格式化收件时间
         date2 = time.strftime("%Y-%m-%d", date1)
-        print date2
+        logger.debug(date2)
         #如果标题匹配
         if subject and subject[:len(prefix)] == prefix and date2 == demand_day:
             value = message.get('From')
@@ -48,8 +49,8 @@ def get_mails(prefix, demand_day):
                 hdr, addr = parseaddr(value)
                 name = decode_str(hdr)
                 value = u'%s <%s>' % (name, addr)
-            print("sender: %s" % value)
-            print("header:%s" % subject)
+            logger.debug("sender: %s", value)
+            logger.debug("header:%s", subject)
             for part in message.walk():
                 fileName = part.get_filename()
                 fileName = decode_str(fileName)
@@ -58,7 +59,7 @@ def get_mails(prefix, demand_day):
                     with open(fileName, 'wb') as fEx:
                         data = part.get_payload(decode=True)
                         fEx.write(data)
-                        print "Has saved attachment:", fileName
+                        logger.debug("Has saved attachment:%s", fileName)
                         #Have loaded the related ad resource
                         server.quit()
                         return True

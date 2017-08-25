@@ -9,6 +9,8 @@ import traceback
 import ConfigParser
 import argparse
 from appium.webdriver.common.touch_action import TouchAction
+import logging
+logger = logging.getLogger('main.autoImg')
 
 class AutoImg:
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
@@ -77,8 +79,8 @@ class AutoImg:
         self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad_message)))
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
-        print "img_ad_message fingerprint: %s\nimg_good_message fingerprint: %s\nimg_write_message fingerprint:%s" \
-              %(self.fp_ad, self.fp_good_message, self.fp_write_message)
+        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s" \
+              ,self.fp_ad, self.fp_good_message, self.fp_write_message)
 
         self.screen_width = self.cf.getint('screen', 'width')
         self.screen_height = self.cf.getint('screen', 'height')
@@ -104,7 +106,8 @@ class AutoImg:
         top_left = min_loc
         t_w, t_h = target.shape[::-1]
         bottom_right = (top_left[0] + t_w, top_left[1] + t_h)
-        print top_left[0], top_left[1], bottom_right[0], bottom_right[1]
+        logger.debug("Find matched area, top_left[0]:%d, top_left[1]:%d, bottom_right[0]:%d, bottom_right[1]:%d",
+                     top_left[0], top_left[1], bottom_right[0], bottom_right[1])
         crop = src[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
         return crop, top_left, bottom_right
 
@@ -112,7 +115,7 @@ class AutoImg:
         """ Find the ad position """
         crop, top_left, bottom_right = self.findMatched(img, self.img_ad_message)
         fp = str(imagehash.dhash(Image.fromarray(crop)))
-        print ("Found img_ad_message hash is:" + fp)
+        logger.debug("Found img_ad_message hash is:" + fp)
         is_top = self.hammingDistOK(fp, self.fp_ad)
         return is_top, top_left, bottom_right
 
@@ -120,12 +123,12 @@ class AutoImg:
         """Find good_message or write_message position"""
         crop, top_left, bottom_right = self.findMatched(img, self.img_good_message)
         fp = str(imagehash.dhash(Image.fromarray(crop)))
-        print ("Found img_good_message hash is:" + fp)
+        logger.debug("Found img_good_message hash is:" + fp)
         if self.hammingDistOK(fp, self.fp_good_message):
             return self.GOOD_MESSAGE, top_left, bottom_right
         crop, top_left, bottom_right = self.findMatched(img, self.img_write_message)
         fp = str(imagehash.dhash(Image.fromarray(crop)))
-        print ("Found img_write_message hash is:" + fp)
+        logger.debug("Found img_write_message hash is:" + fp)
         if self.hammingDistOK(fp, self.fp_write_message):
             return self.WRITE_MESSAGE, top_left, bottom_right
         return self.NONE, top_left, bottom_right
@@ -151,7 +154,7 @@ class AutoImg:
                         self.screen_height * 2/ 5)
                     break
             except Exception as e:
-                print('expect:' + repr(e))
+                logger.error('expect:' + repr(e))
 
         return type, (top_left[0], bottom_right[1]), (bottom_right1[0], top_left1[1])
 
@@ -174,7 +177,7 @@ class AutoImg:
                     continue
                 break
             except Exception as e:
-                print('expect:' + repr(e))
+                logger.error('expect:' + repr(e))
         if self.NONE == type: # There is no good_message and write_message
             crop, top_left1, bottom_right1 = self.findMatched(img, self.img_bottom)
 
@@ -201,7 +204,7 @@ class AutoImg:
                 if bottom_right[1] - img_top_right[1] >= height:
                     break
             except Exception as e:
-                print('expect:' + repr(e))
+                logger.error('expect:' + repr(e))
 
         img_color = cv2.imread("screenshot-above.png")
         return img_color[bottom_right[1] - height:bottom_right[1], 0:self.screen_width]
@@ -284,7 +287,7 @@ class AutoImg:
             else:
                 mlen += cl
             if mlen > fl:
-                print 'doc first line len is:', i
+                logger.debug('doc first line len is:%d', i)
                 return i
 
         return len(doc)
@@ -377,7 +380,7 @@ class AutoImg:
 
         ad_bottom_type, left, right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
                         self.screen_height / 4)
-        print "bottom type:%d" %(ad_bottom_type)
+        logger.debug("bottom type:%d", ad_bottom_type)
 
         img_color = cv2.imread('screenshot.png')
         # Compare ad area and area we need
@@ -391,7 +394,7 @@ class AutoImg:
 
         # ad aread is bigger than wanted, should shrink
         if area_height - wanted_height > 3:
-            print "Should shrink ad area"
+            logger.debug("Should shrink ad area")
             #  Calculate ad area
             left = (0, left[1] + (area_height - wanted_height))
             # Calculate ad top area
@@ -402,7 +405,7 @@ class AutoImg:
 
         # ad area is smaller than wanted, should enlarge
         if area_height - wanted_height < -3:
-            print "Should enlarge ad area"
+            logger.debug("Should enlarge ad area")
             # Calculate ad top area
             crop, img_top_left, img_top_right = self.findMatched(img_gray, self.img_top)
             ad_above = img_color[img_top_right[1]+wanted_height-area_height:left[1], 0:self.screen_width]
@@ -441,10 +444,9 @@ class AutoImg:
             self.start()
             return True
         except Exception as e:
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             self.driver.quit()
             return False
-
 
 if __name__ == '__main__':
     try:

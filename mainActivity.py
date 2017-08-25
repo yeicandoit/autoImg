@@ -7,13 +7,17 @@ import sqlite3
 import random
 import traceback
 from time import sleep
+import logging
+import logging.config
+
+logging.config.fileConfig('conf/log.conf')
+logger = logging.getLogger('main')
+dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活']}
 
 def run_shell(cmd):
     if 0 != os.system(cmd):
-        print "Execute " + cmd + " error, exit"
+        logger.error("Execute " + cmd + " error, exit")
         exit(0)
-
-dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活']}
 
 def ptu():
     today = datetime.date.today().strftime('%Y-%m-%d')
@@ -21,7 +25,7 @@ def ptu():
     #Sqlite saved the ad demand
     conn = sqlite3.connect('webAutoImg/db.sqlite3')
     cc = conn.cursor()
-    print 'Opened database successfully'
+    logger.debug('Opened database successfully')
     cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id, '
                         'doc1stLine from autoimage_addemand where date ="' + today + '" and status = 0')
 
@@ -46,7 +50,7 @@ def ptu():
             wa = was[random.randint(0, len(was)-1)]
             ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network, title, doc, doc1stLine, savepath)
             if ai.compositeImage():
-                print "composite image OK!!!"
+                logger.debug("composite image OK!!!")
                 cc.execute('update autoimage_addemand set compositeImage = "' +
                            tPath + '", status = 1 where id = ' + str(tId))
                 conn.commit()
@@ -58,9 +62,9 @@ def ptu():
                           + '<br> 标题:'.decode('utf-8') + title + '<br> 文案:'.decode('utf-8') + doc \
                           + '<br> sqlite id:' + str(tId) + '<br> 第一行文案长度:'.decode('utf-8') + str(doc1stLine)
                 myEmail.send_email('wangqiang@optaim.com', content)
-                print "Failed to composite image"
+                logger.warn("Failed to composite image:" + content)
         else:
-            print 'Only support weixin now'
+            logger.warn('Only support weixin now')
 
     conn.close()
 
@@ -70,5 +74,5 @@ if __name__ == '__main__':
             ptu()
             sleep(3)
     except Exception as e:
-        myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!')
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
+        myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())

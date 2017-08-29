@@ -33,7 +33,7 @@ def ptu():
     cc = conn.cursor()
     logger.debug('Opened database successfully')
     cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id, '
-                        'doc1stLine from autoimage_addemand where date ="' + today + '" and status = 0')
+                        'doc1stLine, email from autoimage_addemand where date ="' + today + '" and status = 0')
 
     for row in cursor:
         app = row[0]
@@ -49,6 +49,7 @@ def ptu():
             doc = row[9]
             tId = row[10]
             doc1stLine = row[11]
+            email = row[12]
             savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
             tPath = 'composite/' + today + '-' + str(tId) + '.png'
 
@@ -60,13 +61,16 @@ def ptu():
                 cc.execute('update autoimage_addemand set compositeImage = "' +
                            tPath + '", status = 1 where id = ' + str(tId))
                 conn.commit()
+                if email:
+                    myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), savepath)
             else:
                 content = 'Failed ad info is<br> app:' + app + '<br> 广告类型:'.decode('utf-8') + adType \
                           + '<br> 广告:'.decode('utf-8') + adImg + '<br> 角标:'.decode('utf-8') + adCornerImg \
                           + '<br> 公众号:'.decode('utf-8') + wa.decode('utf-8') + '<br> 网络:'.decode('utf-8') + network \
                           + '<br> 时间:'.decode('utf-8') + time + '<br> 电量:'.decode('utf-8') + str(battery) \
                           + '<br> 标题:'.decode('utf-8') + title + '<br> 文案:'.decode('utf-8') + doc \
-                          + '<br> sqlite id:' + str(tId) + '<br> 第一行文案长度:'.decode('utf-8') + str(doc1stLine)
+                          + '<br> sqlite id:' + str(tId) + '<br> 第一行文案长度:'.decode('utf-8') + str(doc1stLine) \
+                          + '<br> 邮箱:'.decode('utf8') + email
                 myEmail.send_email('wangqiang@optaim.com', content)
                 logger.warn("Failed to composite image:" + content)
         else:

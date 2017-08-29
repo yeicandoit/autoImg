@@ -64,7 +64,7 @@ def savedemand(request):
                       adCornerImg=ad_corner_img, wcType=m_post['wcType'],
                       network=m_post['network'], time=ad_time, battery=float(m_post['battery']),
                       title=ad_title, doc=ad_doc, date=datetime.date.today().strftime('%Y-%m-%d'),
-                      status=0, doc1stLine=doc_1st_line)
+                      status=0, doc1stLine=doc_1st_line, email=m_post['email'])
     ext = '-ad' + os.path.splitext(demand.adImg.name)[1]
     demand.adImg.name = time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime(time.time())) + ext
     if demand.adCornerImg.name != 'ad_default/corner-mark.png':

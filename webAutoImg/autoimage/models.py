@@ -19,3 +19,4 @@ class AdDemand(models.Model):
     status = models.IntegerField()
     compositeImage = models.ImageField(null=True)
     doc1stLine = models.IntegerField(null=True)
+    email = models.CharField(max_length=64, null=True)

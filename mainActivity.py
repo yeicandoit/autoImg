@@ -12,7 +12,13 @@ import logging.config
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
-dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活']}
+dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '汽车维修与保养', '汽车点评', '汽车知识攻略',
+                         '汽车大师', '汽车头条', '汽车情报'],
+                  'finance':['金融投资报', '每日金融', '贸易金融'],
+                  'house':['中国房地产报', '中国房地产'],
+                  'travel':['旅行家杂志', '最旅行', '户外探险outdoor'],
+                  'information':['第一财经资讯', '新闻晨报', '新闻早餐', '新闻夜航'],
+                  'game':['游戏日报']}
 
 def run_shell(cmd):
     if 0 != os.system(cmd):

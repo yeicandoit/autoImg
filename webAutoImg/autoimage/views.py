@@ -71,13 +71,12 @@ def savedemand(request):
     if demand.adCornerImg.name != 'ad_default/corner-mark.png':
         demand.adCornerImg.name = 'corner-mark.png'
     demand.save()
-    return HttpResponseRedirect('/showimages')
+    return HttpResponse("请等待3到10分钟，P好的图片会发送到你的邮箱!")
 
 def showimages(request):
-    return HttpResponse("请等待3到10分钟，P好的图片会发送到你的邮箱!")
-    #imgs = AdDemand.objects.filter(date = datetime.date.today().strftime('%Y-%m-%d'))
-    #context = {
-    #    'imgs':imgs,
-    #}
-#
-    #return render(request, 'autoimage/showimages.html', context)
+    imgs = AdDemand.objects.filter(date = datetime.date.today().strftime('%Y-%m-%d'))
+    context = {
+        'imgs':imgs,
+    }
+
+    return render(request, 'autoimage/showimages.html', context)

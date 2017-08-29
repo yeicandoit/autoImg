@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from django.shortcuts import render
 from autoimage.models import AdDemand
 from django.http import HttpResponseRedirect
+from django.http import HttpResponse
 import datetime
 import time
 import os
@@ -73,9 +74,10 @@ def savedemand(request):
     return HttpResponseRedirect('/showimages')
 
 def showimages(request):
-    imgs = AdDemand.objects.filter(date = datetime.date.today().strftime('%Y-%m-%d'))
-    context = {
-        'imgs':imgs,
-    }
-
-    return render(request, 'autoimage/showimages.html', context)
+    return HttpResponse("请等待3到10分钟，P好的图片会发送到你的邮箱!")
+    #imgs = AdDemand.objects.filter(date = datetime.date.today().strftime('%Y-%m-%d'))
+    #context = {
+    #    'imgs':imgs,
+    #}
+#
+    #return render(request, 'autoimage/showimages.html', context)

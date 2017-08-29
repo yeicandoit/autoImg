@@ -355,12 +355,13 @@ class AutoImg:
             cnt = cnt + 1
             assert cnt != 15, "Do not find webaccount %s" %(target)
             try:
+                if 1 != cnt:
+                    self.driver.swipe(self.screen_width / 2, self.screen_height * 2 / 3, self.screen_width / 2,
+                                      self.screen_height * 1 / 3)
+                    self.driver.implicitly_wait(5)
                 return self.driver.find_element_by_name(target).click()
                 break
             except:
-                self.driver.swipe(self.screen_width / 2, self.screen_height * 2 / 3, self.screen_width / 2,
-                        self.screen_height * 1 / 3)
-                self.driver.implicitly_wait(5)
                 continue
 
     def start(self):

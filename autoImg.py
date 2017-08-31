@@ -9,6 +9,7 @@ import traceback
 import ConfigParser
 import argparse
 from appium.webdriver.common.touch_action import TouchAction
+import random
 import logging
 logger = logging.getLogger('main.autoImg')
 
@@ -378,7 +379,8 @@ class AutoImg:
         el = self.clickTarget(self.webcat_account)
         self.driver.implicitly_wait(10)
         action = TouchAction(self.driver)
-        action.tap(el, self.cf.getint('article_pos', 'x'), self.cf.getint('article_pos', 'y')).perform()
+        random_y = random.randint(self.cf.getint('article_pos', 'y_min'), self.cf.getint('article_pos', 'y_max'))
+        action.tap(el, self.cf.getint('article_pos', 'x'), random_y).perform()
         #self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
         sleep(1)
 
@@ -454,23 +456,23 @@ class AutoImg:
 
 if __name__ == '__main__':
     try:
-        parser = argparse.ArgumentParser(description="progrom description")
-        parser.add_argument('-t', '--time', required=True, help="时间")
-        parser.add_argument('-b', '--battery', type=float, required=True, help='电量')
-        parser.add_argument('-w', '--webaccount', required=True, help='公众号')
-        parser.add_argument('-a', '--ad', required=True, help='广告')
-        parser.add_argument('-c', '--corner', required=True, help='角标')
-        parser.add_argument('-at', '--type', default='banner', help='广告类型')
-        parser.add_argument('-n', '--network', default='wifi', help='网络类型')
-        parser.add_argument('-ti', '--title', default='', help='图文广告标题')
-        parser.add_argument('-d', '--doc', default='', help='图文广告文案')
+        #parser = argparse.ArgumentParser(description="progrom description")
+        #parser.add_argument('-t', '--time', required=True, help="时间")
+        #parser.add_argument('-b', '--battery', type=float, required=True, help='电量')
+        #parser.add_argument('-w', '--webaccount', required=True, help='公众号')
+        #parser.add_argument('-a', '--ad', required=True, help='广告')
+        #parser.add_argument('-c', '--corner', required=True, help='角标')
+        #parser.add_argument('-at', '--type', default='banner', help='广告类型')
+        #parser.add_argument('-n', '--network', default='wifi', help='网络类型')
+        #parser.add_argument('-ti', '--title', default='', help='图文广告标题')
+        #parser.add_argument('-d', '--doc', default='', help='图文广告文案')
 
-        args = parser.parse_args()
+        #args = parser.parse_args()
         #title = '上海老公房8万翻新出豪宅感！'
         #doc = '输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = AutoImg('16:20', 1, '爱健身', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
-        autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
-                          args.title, args.doc)
+        autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi')
+        #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
+        #                  args.title, args.doc)
         autoImg.start()
     except Exception as e:
         traceback.print_exc()

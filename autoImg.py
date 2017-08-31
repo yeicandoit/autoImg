@@ -30,6 +30,10 @@ class AutoImg:
         self.desc = desc
         self.doc = doc
         self.doc1st_line = doc1st_line
+        logger.debug("Ad demand is time:%s, battery:%f, webcat_account:%s, img_past_ad:%s, img_corner_mark:%s, "
+                     "ad_type:%s, network:%s, desc:%s, doc:%s, doc1st_line:%s", self.time, self.battery,
+                     self.webcat_account, self.img_paste_ad, self.img_corner_mark, self.ad_type, self.network,
+                     self.desc, self.doc, self.doc1st_line)
 
         if 'banner' == ad_type:
             self.ad_width = self.cf.getint('banner', 'width')

@@ -214,7 +214,7 @@ class AutoImg:
         img_color = cv2.imread("screenshot-above.png")
         return img_color[bottom_right[1] - height:bottom_right[1], 0:self.screen_width]
 
-    def warterMark(self, ad, corner_mark):
+    def warterMark(self, ad, corner_mark, pos='bottom_right'):
         """Add corner_mark on right_bottom for ad"""
         img = cv2.imread(ad)
         img_gray = cv2.imread(ad, 0)
@@ -222,7 +222,10 @@ class AutoImg:
         mask_gray = cv2.imread(corner_mark, 0)
         w_mask, h_mask = mask_gray.shape[::-1]
         w_img, h_img = img_gray.shape[::-1]
-        mask_region = img[h_img - h_mask:h_img, w_img - w_mask:w_img]
+        if 'top_right' == pos:
+            mask_region = img[0:h_mask, w_img - w_mask:w_img]
+        else:
+            mask_region = img[h_img - h_mask:h_img, w_img - w_mask:w_img]
 
         alpha_channel = mask[:, :, 3]
         rgb_channels = mask[:, :, :3]
@@ -232,7 +235,11 @@ class AutoImg:
         front = rgb_channels.astype(np.float32) * alpha_factor
         back = mask_region.astype(np.float32) * (1 - alpha_factor)
         final_img = front + back
-        img[h_img - h_mask:h_img, w_img - w_mask:w_img] = final_img
+        if 'top_right' == pos:
+            img[0:h_mask, w_img - w_mask:w_img] = final_img
+        else:
+            img[h_img - h_mask:h_img, w_img - w_mask:w_img] = final_img
+
         return img
 
     def imageText(self, ad, corner_mark, desc, doc):
@@ -454,6 +461,58 @@ class AutoImg:
             self.driver.quit()
             return False
 
+class QQAutoImg(AutoImg):
+    def __init__(self, plugin, city, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
+                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+        self.plugin = plugin
+        self.city = city
+    def findWeatherCity(self, city):
+
+        return True
+    def start(self):
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.4.2',
+            'deviceName': 'H60-L11',
+            'appPackage': 'com.tencent.mobileqq',
+            'appActivity': '.activity.SplashActivity',
+        }
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        el = self.driver.find_element_by_name(u"联系人").click()
+        self.driver.implicitly_wait(10)
+        action = TouchAction(self.driver)
+        action.tap(el, self.cf.getint('QQ_icon', 'x'), self.cf.getint('QQ_icon', 'y')).perform()
+        sleep(1)
+        el = self.driver.find_element_by_name(u"o").click()
+        self.driver.implicitly_wait(10)
+        sleep(10)
+        #Click switch city
+        #action.tap(el, self.cf.getint('QQ_weather', 'switch_x'), self.cf.getint('QQ_weather', 'switch_y')).perform()
+        #sleep(3)
+        self.driver.get_screenshot_as_file("screenshot.png")
+
+        ad_weather = cv2.resize(cv2.imread(self.img_paste_ad), ((self.cf.getint('QQ_weather', 'ad_width'),
+                                                    self.cf.getint('QQ_weather', 'ad_height'))))
+        cv2.imwrite('ad_weather.png', ad_weather)
+        ad_watermark = self.warterMark('ad_weather.png', self.img_corner_mark, 'top_right')
+        im = cv2.imread('screenshot.png')
+        im[self.cf.getint('QQ_weather', 'ad_top_left_y'):self.cf.getint('QQ_weather', 'ad_bottom_right_y'),
+        self.cf.getint('QQ_weather', 'ad_top_left_x'):self.cf.getint('QQ_weather', 'ad_bottom_right_x')] \
+            = ad_watermark
+        cv2.imwrite(self.composite_ads_path, im)
+        self.driver.quit()
+
+    def compositeImage(self):
+        try:
+            self.start()
+            return True
+        except Exception as e:
+            traceback.print_exc()
+            self.driver.quit()
+            return False
 if __name__ == '__main__':
     try:
         #parser = argparse.ArgumentParser(description="progrom description")
@@ -466,13 +525,15 @@ if __name__ == '__main__':
         #parser.add_argument('-n', '--network', default='wifi', help='网络类型')
         #parser.add_argument('-ti', '--title', default='', help='图文广告标题')
         #parser.add_argument('-d', '--doc', default='', help='图文广告文案')
-
         #args = parser.parse_args()
-        #title = '上海老公房8万翻新出豪宅感！'
-        #doc = '输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi')
+
+        title = '上海老公房8万翻新出豪宅感！'
+        doc = '输入你家房子面积，算一算装修该花多少钱？'
+        autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/4.jpg', 'ads/corner-mark.png', 'banner', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         autoImg.start()
+        #qq = QQAutoImg('QQ', '潍坊', '16:20', 1, '爱健身', 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        #qq.compositeImage()
     except Exception as e:
         traceback.print_exc()

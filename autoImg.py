@@ -468,10 +468,13 @@ class QQAutoImg(AutoImg):
                          doc, doc1st_line, save_path)
         self.plugin = plugin
         self.city = city
-    def findWeatherCity(self, city):
+        self.img_hot_city = cv2.imread(self.cf.get('image_path', 'hot_city'), 0)
+        self.fp_hot_city = str(imagehash.dhash(Image.fromarray(self.img_hot_city)))
+        logger.debug("plugin:%s, city:%s", self.plugin, self.city)
+        logger.debug("img_hot_city fingerprint:%s", self.fp_hot_city)
+        self.general_cities = ['hefei', 'fuzhou', 'wuhan']
+        self.city_pre = {'hefei':'H', 'fuzhou':'F', 'wuhan':'W'}
 
-        return True
-    def start(self):
         self.desired_caps = {
             'platformName': 'Android',
             'platformVersion': '4.4.2',
@@ -479,6 +482,16 @@ class QQAutoImg(AutoImg):
             'appPackage': 'com.tencent.mobileqq',
             'appActivity': '.activity.SplashActivity',
         }
+
+    def findHotCity(self, img):
+        """ Find the hot city position """
+        crop, top_left, bottom_right = self.findMatched(img, self.img_hot_city)
+        fp = str(imagehash.dhash(Image.fromarray(crop)))
+        logger.debug("Found hot city fp is:" + fp)
+        is_hot_city = self.hammingDistOK(fp, self.fp_hot_city)
+        return is_hot_city, top_left, bottom_right
+
+    def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
         el = self.driver.find_element_by_name(u"联系人").click()
@@ -489,20 +502,53 @@ class QQAutoImg(AutoImg):
         el = self.driver.find_element_by_name(u"o").click()
         self.driver.implicitly_wait(10)
         sleep(10)
+
         #Click switch city
-        #action.tap(el, self.cf.getint('QQ_weather', 'switch_x'), self.cf.getint('QQ_weather', 'switch_y')).perform()
-        #sleep(3)
-        self.driver.get_screenshot_as_file("screenshot.png")
+        if 'shanghai' != self.city:
+            action.tap(el, self.cf.getint('QQ_weather', 'switch_x'), self.cf.getint('QQ_weather', 'switch_y')).perform()
+            sleep(2)
+            self.driver.get_screenshot_as_file("screenshot.png")
+
+            #Choose city page may have GPS info, have or have not GPS info, hot city' position is different,
+            #So find hot city img to get city' precise position
+            img = cv2.imread('screenshot.png', 0)
+            is_hot_city, top_left, bottom_right = self.findHotCity(img)
+            logger.debug("is_hot_city:%d, top_left[0]:%d, top_left[1]:%d, bottom_right[0]:%d, bottom_right[1]:%d",
+                          is_hot_city, top_left[0], top_left[1], bottom_right[0], bottom_right[1])
+            #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+            #cv2.imwrite('hot_city.png', img)
+            if self.city not in self.general_cities:
+                x = self.cf.getint('QQ_weather', self.city+"_x") + top_left[0]
+                y = self.cf.getint('QQ_weather', self.city+"_y") + top_left[1]
+                action.tap(el, x, y).perform()
+            else:
+                x = self.cf.getint('QQ_weather', self.city_pre[self.city] + "_x") + top_left[0]
+                y = self.cf.getint('QQ_weather', self.city_pre[self.city] + "_y") + top_left[1]
+                action.tap(el, x, y).perform()
+                sleep(0.5)
+                x = self.cf.getint('QQ_weather', self.city + "_x")
+                y = self.cf.getint('QQ_weather', self.city + "_y")
+                action.tap(el, x, y).perform()
+            sleep(10)
+            self.driver.get_screenshot_as_file("screenshot.png")
+        else:
+            self.driver.get_screenshot_as_file("screenshot.png")
 
         ad_weather = cv2.resize(cv2.imread(self.img_paste_ad), ((self.cf.getint('QQ_weather', 'ad_width'),
                                                     self.cf.getint('QQ_weather', 'ad_height'))))
         cv2.imwrite('ad_weather.png', ad_weather)
+
         ad_watermark = self.warterMark('ad_weather.png', self.img_corner_mark, 'top_right')
         im = cv2.imread('screenshot.png')
         im[self.cf.getint('QQ_weather', 'ad_top_left_y'):self.cf.getint('QQ_weather', 'ad_bottom_right_y'),
         self.cf.getint('QQ_weather', 'ad_top_left_x'):self.cf.getint('QQ_weather', 'ad_bottom_right_x')] \
             = ad_watermark
+
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            im[0:self.ad_header_height, 0:self.ad_header_width] = img_header
         cv2.imwrite(self.composite_ads_path, im)
+
         self.driver.quit()
 
     def compositeImage(self):
@@ -529,11 +575,11 @@ if __name__ == '__main__':
 
         title = '上海老公房8万翻新出豪宅感！'
         doc = '输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/4.jpg', 'ads/corner-mark.png', 'banner', 'wifi', title, doc)
+        #autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/4.jpg', 'ads/corner-mark.png', 'banner', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        autoImg.start()
-        #qq = QQAutoImg('QQ', '潍坊', '16:20', 1, '爱健身', 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        #qq.compositeImage()
+        #autoImg.start()
+        qq = QQAutoImg('QQ', 'shanghai', '16:20', 1, '爱健身', 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        qq.compositeImage()
     except Exception as e:
         traceback.print_exc()

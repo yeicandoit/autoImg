@@ -21,7 +21,7 @@ class AutoImg:
 
         self.time = time
         self.battery = battery
-        self.webcat_account = webcat_account.decode('utf-8')
+        self.webcat_account = webcat_account
         self.img_paste_ad = img_paste_ad
         self.img_corner_mark = img_corner_mark
         self.ad_type = ad_type

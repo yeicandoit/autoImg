@@ -11,6 +11,7 @@ import logging
 import logging.config
 import MySQLdb
 import urllib
+import mainActivity
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
@@ -102,6 +103,7 @@ if __name__ == '__main__':
     try:
         while 1:
             ptu()
+            mainActivity.ptu()
             sleep(3)
     except Exception as e:
         logger.error(traceback.format_exc())

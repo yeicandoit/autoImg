@@ -12,8 +12,8 @@ import logging.config
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
-dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '汽车维修与保养', '汽车点评', '汽车知识攻略',
-                         '汽车大师', '汽车头条', '汽车情报'],
+dictWebAccount = {'car':['汽车之家'], #'汽车工艺师', '汽车生活', '汽车维修与保养', '汽车点评', '汽车知识攻略',
+                         #'汽车大师', '汽车头条', '汽车情报'],
                   'finance':['金融投资报', '每日金融', '贸易金融'],
                   'house':['中国房地产报', '中国房地产'],
                   'travel':['旅行家杂志', '最旅行', '户外探险outdoor'],
@@ -55,7 +55,7 @@ def ptu():
 
             was = dictWebAccount.get(wcType)
             wa = was[random.randint(0, len(was)-1)]
-            ai = autoImg.AutoImg(time, battery, wa.decode('utf-8'), adImg, adCornerImg, adType, network,
+            ai = autoImg.WebChatAutoImg(time, battery, wa.decode('utf-8'), adImg, adCornerImg, adType, network,
                                  title, doc, doc1stLine, savepath)
             if ai.compositeImage():
                 logger.debug("composite image OK!!!")

@@ -75,7 +75,7 @@ def ptu():
             else:
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
-            ai = autoImg.AutoImg(time, battery, wa, adImg, adCornerImg, adType, network,
+            ai = autoImg.WebChatAutoImg(time, battery, wa, adImg, adCornerImg, adType, network,
                                  title, doc, doc1stLine, savepath)
             if ai.compositeImage():
                 logger.debug("composite image OK!!!")

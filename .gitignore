@@ -5,4 +5,8 @@ uploadpic/migrations/*.pyc
 webAutoImg/media/upload/*.jpg
 webAutoImg/media/upload/*.png
 webAutoImg/media/composite/*.png
-
+font/MyriadPro*
+ads/*
+log/*
+webAutoImg/.idea/*
+.idea/*

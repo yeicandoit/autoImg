@@ -14,86 +14,33 @@ import logging
 logger = logging.getLogger('main.autoImg')
 
 class AutoImg:
-    def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png',
                  ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read('conf/H60-L11.conf')
 
         self.time = time
         self.battery = battery
-        self.webcat_account = webcat_account
         self.img_paste_ad = img_paste_ad
         self.img_corner_mark = img_corner_mark
         self.ad_type = ad_type
         self.network = network
-        #self.desc = desc.decode('utf-8')
-        #self.doc = doc.decode('utf-8')
         self.desc = desc
         self.doc = doc
         self.doc1st_line = doc1st_line
-        logger.debug("Ad demand is time:%s, battery:%f, webcat_account:%s, img_past_ad:%s, img_corner_mark:%s, "
+        logger.debug("Ad demand is time:%s, battery:%f, img_past_ad:%s, img_corner_mark:%s, "
                      "ad_type:%s, network:%s, desc:%s, doc:%s, doc1st_line:%s", self.time, self.battery,
-                     self.webcat_account, self.img_paste_ad, self.img_corner_mark, self.ad_type, self.network,
+                     self.img_paste_ad, self.img_corner_mark, self.ad_type, self.network,
                      self.desc, self.doc, self.doc1st_line)
-
-        if 'banner' == ad_type:
-            self.ad_width = self.cf.getint('banner', 'width')
-            self.ad_height = self.cf.getint('banner', 'height')
-        if 'image_text' == ad_type:
-            self.ad_width = self.cf.getint('image_text', 'width')
-            self.ad_height = self.cf.getint('image_text', 'height')
-            self.ad_corner_width = self.cf.getint('image_text', 'corner_width')
-            self.ad_corner_height = self.cf.getint('image_text', 'corner_height')
-            self.ad_img_width = self.cf.getint('image_text', 'img_width')
-            self.ad_img_height = self.cf.getint('image_text', 'img_height')
-            self.ad_desc_pos = (self.cf.getint('image_text', 'desc_pos_x'), self.cf.getint('image_text', 'desc_pos_y'))
-            self.ad_doc_pos = (self.cf.getint('image_text', 'doc_pos_x'), self.cf.getint('image_text', 'doc_pos_y'))
-            self.ad_doc_pos1 = (self.cf.getint('image_text', 'doc_pos1_x'), self.cf.getint('image_text', 'doc_pos1_y'))
-            desc_color = self.cf.getint('image_text', 'desc_color')
-            self.ad_desc_color = (desc_color, desc_color, desc_color)
-            doc_color = self.cf.getint('image_text', 'doc_color')
-            self.ad_doc_color = (doc_color, doc_color, doc_color)
-        if 'fine_big' == ad_type:
-            self.ad_width = self.cf.getint('fine_big', 'width')
-            self.ad_height = self.cf.getint('fine_big', 'height')
-
         self.composite_ads_path = save_path
         self.ad_area_path = 'ad_area/'
-
-        self.desired_caps = {
-            'platformName': 'Android',
-            'platformVersion': '4.4.2',
-            'deviceName': 'H60-L11',
-            'appPackage': 'com.tencent.mm',
-            'appActivity': '.ui.LauncherUI',
-            'chromeOptions': {
-                'androidProcess': 'com.tencent.mm:tools'
-            }
-        }
-
-        self.NONE = 0
-        self.GOOD_MESSAGE = 1
-        self.WRITE_MESSAGE = 2
-
-        self.img_ad_message = cv2.imread(self.cf.get('image_path', 'ad_message'), 0)
-        self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
-        self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
-        self.img_top = cv2.imread(self.cf.get('image_path', 'top'), 0)
-        self.img_bottom = cv2.imread(self.cf.get('image_path', 'bottom'), 0)
-        self.img_white_bkg = cv2.imread(self.cf.get('image_path', 'white_bkg'))
-        self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad_message)))
-        self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
-        self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
-        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s" \
-              ,self.fp_ad, self.fp_good_message, self.fp_write_message)
 
         self.screen_width = self.cf.getint('screen', 'width')
         self.screen_height = self.cf.getint('screen', 'height')
         self.ad_header_width = self.cf.getint('screen', 'header_width')
         self.ad_header_height = self.cf.getint('screen', 'header_height')
-        # All types of ad have the same distance between ad area and good_message/write_message
-        self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
-        self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
+
+        self.driver = None
 
     def hammingDistOK(self, s1, s2):
         """ If the distance between image is smaller or equal to 3,
@@ -115,6 +62,159 @@ class AutoImg:
                      top_left[0], top_left[1], bottom_right[0], bottom_right[1])
         crop = src[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
         return crop, top_left, bottom_right
+
+    def warterMark(self, ad, corner_mark, pos='bottom_right'):
+        """Add corner_mark on right_bottom for ad"""
+        img = cv2.imread(ad)
+        img_gray = cv2.imread(ad, 0)
+        mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)
+        mask_gray = cv2.imread(corner_mark, 0)
+        w_mask, h_mask = mask_gray.shape[::-1]
+        w_img, h_img = img_gray.shape[::-1]
+        if 'top_right' == pos:
+            mask_region = img[0:h_mask, w_img - w_mask:w_img]
+        else:
+            mask_region = img[h_img - h_mask:h_img, w_img - w_mask:w_img]
+
+        alpha_channel = mask[:, :, 3]
+        rgb_channels = mask[:, :, :3]
+        alpha_factor = alpha_channel[:, :, np.newaxis].astype(np.float32) / 255.0
+        alpha_factor = np.concatenate((alpha_factor, alpha_factor, alpha_factor), axis=2)
+
+        front = rgb_channels.astype(np.float32) * alpha_factor
+        back = mask_region.astype(np.float32) * (1 - alpha_factor)
+        final_img = front + back
+        if 'top_right' == pos:
+            img[0:h_mask, w_img - w_mask:w_img] = final_img
+        else:
+            img[h_img - h_mask:h_img, w_img - w_mask:w_img] = final_img
+
+        return img
+
+    def header(self, time, battery, network):
+        """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
+        if len(time) < 5:
+            return False, None
+        if battery > self.cf.getfloat('battery', 'capacity_max') or battery < self.cf.getfloat('battery', 'capacity_min'):
+            return  False, None
+        if network != '3G' and network != '4G' and network != 'wifi':
+            return False, None
+
+        # Set network
+        img = cv2.imread(self.cf.get('image_path', network))
+
+        # battery capacity position in battery
+        bc_bottom_right = (self.cf.getint('battery', 'capacity_bottom_right_x'), self.cf.getint('battery', 'capacity_bottom_right_y'))
+        bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
+
+        # Set battery
+        bc_width = bc_bottom_right[0] - bc_top_left[0]
+        bc_height = bc_bottom_right[1] - bc_top_left[1]
+        bc_setting_width = int(bc_width * battery)
+        img_bc = cv2.imread(self.ad_area_path + 'battery-capacity.png')
+        img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
+        img_battery = cv2.imread(self.ad_area_path + 'battery.png')
+        img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
+        y = self.cf.getint('battery', 'top_left_y')
+        y1 = self.cf.getint('battery', 'bottom_right_y')
+        x = self.cf.getint('battery', 'top_left_x')
+        x1 = self.cf.getint('battery', 'bottom_right_x')
+        img[y:y1, x:x1] = img_battery
+
+        # Set time
+        IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
+        IMG_NUM_HEIGHT = self.cf.getint('time', 'num_height')
+        IMG_COLON_WIDTH = self.cf.getint('time', 'colon_width')
+        NUM_TOP_LEFT_WIDTH = self.cf.getint('time', 'top_left_x')
+        NUM_TOP_LEFT_HEIGHT = self.cf.getint('time', 'top_left_y')
+
+        h = NUM_TOP_LEFT_HEIGHT
+        h1 = NUM_TOP_LEFT_HEIGHT + IMG_NUM_HEIGHT
+        w = NUM_TOP_LEFT_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[0]))
+        w = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[1]))
+        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', 'colon'))
+        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[3]))
+        w = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 4 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[4]))
+
+        return True, img
+
+    def start(self):
+        pass
+
+    def compositeImage(self):
+        try:
+            self.start()
+            return True
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            if self.driver:
+                self.driver.quit()
+            return False
+
+class WebChatAutoImg(AutoImg):
+    def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
+                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+        self.webcat_account = webcat_account
+        if 'banner' == ad_type:
+            self.ad_width = self.cf.getint('banner', 'width')
+            self.ad_height = self.cf.getint('banner', 'height')
+        if 'image_text' == ad_type:
+            self.ad_width = self.cf.getint('image_text', 'width')
+            self.ad_height = self.cf.getint('image_text', 'height')
+            self.ad_corner_width = self.cf.getint('image_text', 'corner_width')
+            self.ad_corner_height = self.cf.getint('image_text', 'corner_height')
+            self.ad_img_width = self.cf.getint('image_text', 'img_width')
+            self.ad_img_height = self.cf.getint('image_text', 'img_height')
+            self.ad_desc_pos = (self.cf.getint('image_text', 'desc_pos_x'), self.cf.getint('image_text', 'desc_pos_y'))
+            self.ad_doc_pos = (self.cf.getint('image_text', 'doc_pos_x'), self.cf.getint('image_text', 'doc_pos_y'))
+            self.ad_doc_pos1 = (self.cf.getint('image_text', 'doc_pos1_x'), self.cf.getint('image_text', 'doc_pos1_y'))
+            desc_color = self.cf.getint('image_text', 'desc_color')
+            self.ad_desc_color = (desc_color, desc_color, desc_color)
+            doc_color = self.cf.getint('image_text', 'doc_color')
+            self.ad_doc_color = (doc_color, doc_color, doc_color)
+        if 'fine_big' == ad_type:
+            self.ad_width = self.cf.getint('fine_big', 'width')
+            self.ad_height = self.cf.getint('fine_big', 'height')
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.4.2',
+            'deviceName': 'H60-L11',
+            'appPackage': 'com.tencent.mm',
+            'appActivity': '.ui.LauncherUI',
+            'chromeOptions': {
+                'androidProcess': 'com.tencent.mm:tools'
+            }
+        }
+        self.NONE = 0
+        self.GOOD_MESSAGE = 1
+        self.WRITE_MESSAGE = 2
+        self.img_ad_message = cv2.imread(self.cf.get('image_path', 'ad_message'), 0)
+        self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
+        self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
+        self.img_top = cv2.imread(self.cf.get('image_path', 'top'), 0)
+        self.img_bottom = cv2.imread(self.cf.get('image_path', 'bottom'), 0)
+        self.img_white_bkg = cv2.imread(self.cf.get('image_path', 'white_bkg'))
+        self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad_message)))
+        self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
+        self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
+        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s" \
+              ,self.fp_ad, self.fp_good_message, self.fp_write_message)
+        # All types of ad have the same distance between ad area and good_message/write_message
+        self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
+        self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
 
     def findAdAreaTop(self, img):
         """ Find the ad position """
@@ -214,34 +314,6 @@ class AutoImg:
         img_color = cv2.imread("screenshot-above.png")
         return img_color[bottom_right[1] - height:bottom_right[1], 0:self.screen_width]
 
-    def warterMark(self, ad, corner_mark, pos='bottom_right'):
-        """Add corner_mark on right_bottom for ad"""
-        img = cv2.imread(ad)
-        img_gray = cv2.imread(ad, 0)
-        mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)
-        mask_gray = cv2.imread(corner_mark, 0)
-        w_mask, h_mask = mask_gray.shape[::-1]
-        w_img, h_img = img_gray.shape[::-1]
-        if 'top_right' == pos:
-            mask_region = img[0:h_mask, w_img - w_mask:w_img]
-        else:
-            mask_region = img[h_img - h_mask:h_img, w_img - w_mask:w_img]
-
-        alpha_channel = mask[:, :, 3]
-        rgb_channels = mask[:, :, :3]
-        alpha_factor = alpha_channel[:, :, np.newaxis].astype(np.float32) / 255.0
-        alpha_factor = np.concatenate((alpha_factor, alpha_factor, alpha_factor), axis=2)
-
-        front = rgb_channels.astype(np.float32) * alpha_factor
-        back = mask_region.astype(np.float32) * (1 - alpha_factor)
-        final_img = front + back
-        if 'top_right' == pos:
-            img[0:h_mask, w_img - w_mask:w_img] = final_img
-        else:
-            img[h_img - h_mask:h_img, w_img - w_mask:w_img] = final_img
-
-        return img
-
     def imageText(self, ad, corner_mark, desc, doc):
         """Add corner_mark, desc, doc for ad"""
         if len(desc) > self.cf.getint('image_text', 'desc_max_len'):
@@ -303,63 +375,6 @@ class AutoImg:
                 return i
 
         return len(doc)
-
-    def header(self, time, battery, network):
-        """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
-        if len(time) < 5:
-            return False, None
-        if battery > self.cf.getfloat('battery', 'capacity_max') or battery < self.cf.getfloat('battery', 'capacity_min'):
-            return  False, None
-        if network != '3G' and network != '4G' and network != 'wifi':
-            return False, None
-
-        # Set network
-        img = cv2.imread(self.cf.get('image_path', network))
-
-        # battery capacity position in battery
-        bc_bottom_right = (self.cf.getint('battery', 'capacity_bottom_right_x'), self.cf.getint('battery', 'capacity_bottom_right_y'))
-        bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
-
-        # Set battery
-        bc_width = bc_bottom_right[0] - bc_top_left[0]
-        bc_height = bc_bottom_right[1] - bc_top_left[1]
-        bc_setting_width = int(bc_width * battery)
-        img_bc = cv2.imread(self.ad_area_path + 'battery-capacity.png')
-        img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
-        img_battery = cv2.imread(self.ad_area_path + 'battery.png')
-        img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
-        y = self.cf.getint('battery', 'top_left_y')
-        y1 = self.cf.getint('battery', 'bottom_right_y')
-        x = self.cf.getint('battery', 'top_left_x')
-        x1 = self.cf.getint('battery', 'bottom_right_x')
-        img[y:y1, x:x1] = img_battery
-
-        # Set time
-        IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
-        IMG_NUM_HEIGHT = self.cf.getint('time', 'num_height')
-        IMG_COLON_WIDTH = self.cf.getint('time', 'colon_width')
-        NUM_TOP_LEFT_WIDTH = self.cf.getint('time', 'top_left_x')
-        NUM_TOP_LEFT_HEIGHT = self.cf.getint('time', 'top_left_y')
-
-        h = NUM_TOP_LEFT_HEIGHT
-        h1 = NUM_TOP_LEFT_HEIGHT + IMG_NUM_HEIGHT
-        w = NUM_TOP_LEFT_WIDTH
-        w1 = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[0]))
-        w = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
-        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[1]))
-        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
-        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', 'colon'))
-        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        w1 = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[3]))
-        w = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        w1 = NUM_TOP_LEFT_WIDTH + 4 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[4]))
-
-        return True, img
 
     def clickTarget(self, target, type='name'):
         cnt = 0;
@@ -452,19 +467,11 @@ class AutoImg:
 
         sleep(3)
         self.driver.quit()
-    def compositeImage(self):
-        try:
-            self.start()
-            return True
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            self.driver.quit()
-            return False
 
 class QQAutoImg(AutoImg):
-    def __init__(self, plugin, city, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
+    def __init__(self, plugin, city, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png',
                  ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
-        AutoImg.__init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark, ad_type, network, desc,
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
         self.plugin = plugin
         self.city = city
@@ -495,7 +502,7 @@ class QQAutoImg(AutoImg):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
         el = self.driver.find_element_by_name(u"联系人").click()
-        self.driver.implicitly_wait(10)
+        self.driver.implicitly_wait(30)
         action = TouchAction(self.driver)
         action.tap(el, self.cf.getint('QQ_icon', 'x'), self.cf.getint('QQ_icon', 'y')).perform()
         sleep(1)
@@ -551,14 +558,15 @@ class QQAutoImg(AutoImg):
 
         self.driver.quit()
 
-    def compositeImage(self):
-        try:
-            self.start()
-            return True
-        except Exception as e:
-            traceback.print_exc()
-            self.driver.quit()
-            return False
+    #def compositeImage(self):
+    #    try:
+    #        self.start()
+    #        return True
+    #    except Exception as e:
+    #        traceback.print_exc()
+    #        self.driver.quit()
+    #        return False
+
 if __name__ == '__main__':
     try:
         #parser = argparse.ArgumentParser(description="progrom description")
@@ -573,13 +581,12 @@ if __name__ == '__main__':
         #parser.add_argument('-d', '--doc', default='', help='图文广告文案')
         #args = parser.parse_args()
 
-        title = '上海老公房8万翻新出豪宅感！'
-        doc = '输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = AutoImg('16:20', 1, '汽车之家', 'ads/4.jpg', 'ads/corner-mark.png', 'banner', 'wifi', title, doc)
+        title = u'上海老公房8万翻新出豪宅感！'
+        doc = u'输入你家房子面积，算一算装修该花多少钱？'
+        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        #autoImg.start()
-        qq = QQAutoImg('QQ', 'shanghai', '16:20', 1, '爱健身', 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        qq.compositeImage()
+        #autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

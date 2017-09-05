@@ -554,18 +554,12 @@ class QQAutoImg(AutoImg):
         ok, img_header = self.header(self.time, self.battery, self.network)
         if ok:
             im[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+        #Set weather header, so its theme looks like "绅士"主题
+        im[self.cf.getint('QQ_weather', 'header_y1'):self.cf.getint('QQ_weather', 'header_y2'),
+            0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'weather_header'))
+
         cv2.imwrite(self.composite_ads_path, im)
-
         self.driver.quit()
-
-    #def compositeImage(self):
-    #    try:
-    #        self.start()
-    #        return True
-    #    except Exception as e:
-    #        traceback.print_exc()
-    #        self.driver.quit()
-    #        return False
 
 if __name__ == '__main__':
     try:
@@ -583,10 +577,10 @@ if __name__ == '__main__':
 
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        #autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

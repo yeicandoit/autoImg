@@ -7,10 +7,11 @@ import imagehash
 import numpy as np
 import traceback
 import ConfigParser
-import argparse
 from appium.webdriver.common.touch_action import TouchAction
 import random
 import logging
+import logging.config
+logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main.autoImg')
 
 class AutoImg:
@@ -62,6 +63,14 @@ class AutoImg:
                      top_left[0], top_left[1], bottom_right[0], bottom_right[1])
         crop = src[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
         return crop, top_left, bottom_right
+
+    def findMatchedArea(self, src, target, fp_target):
+        """ Find the matched image and its position, judge whether it is OK """
+        crop, top_left, bottom_right = self.findMatched(src, target)
+        fp = str(imagehash.dhash(Image.fromarray(crop)))
+        logger.debug("Found hash is:" + fp)
+        is_top = self.hammingDistOK(fp, fp_target)
+        return is_top, top_left, bottom_right
 
     def warterMark(self, ad, corner_mark, pos='bottom_right'):
         """Add corner_mark on right_bottom for ad"""
@@ -561,26 +570,111 @@ class QQAutoImg(AutoImg):
         cv2.imwrite(self.composite_ads_path, im)
         self.driver.quit()
 
+class QQBrowserAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png',
+                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.ad_flag = cv2.imread(self.cf.get('image_path', 'browser_ad'), 0)
+        self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
+        self.hot_header = cv2.imread(self.cf.get('image_path', 'browser_hot_header'), 0)
+        self.fp_hot_header = str(imagehash.dhash(Image.fromarray(self.hot_header)))
+        self.split = cv2.imread(self.cf.get('image_path', 'browser_split'), 0)
+        self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.4.2',
+            'deviceName': 'H60-L11',
+            'appPackage': 'com.tencent.mtt',
+            'appActivity': '.MainActivity',
+        }
+    def findAdArea(self, start_width, start_height, end_width, end_height):
+        """ We assume that ad area is less than half screen, then we have following logic.
+            QQBrowser will not push ad when accessed too much!!! so set one news area to be ad area.
+        """
+        for _ in (0,random.randint(3, 20)):
+            self.driver.swipe(start_width, start_height, end_width, end_height)
+        cnt = 0
+        while 1:
+            cnt = cnt + 1
+            if cnt == 10:
+                break
+            try:
+                self.driver.swipe(start_width, start_height, end_width, end_height)
+                self.driver.implicitly_wait(10)
+                self.driver.get_screenshot_as_file("screenshot.png")
+                img = cv2.imread('screenshot.png', 0)
+                ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
+                if ok:
+                    #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+                    # Find ad' bottom split line
+                    #img_bottom = img[top_left[1]:top_left[1]+self.cf.getint('QQBrowser', 'ad_bottom'),
+                    #             0:self.screen_width]
+                    #is_bottom, top_left1, bottom_right1 = self.findMatchedArea(img_bottom, self.split, self.fp_split)
+                    height = self.cf.getint('QQBrowser', 'ad_height')
+                    if bottom_right[1] <= self.screen_height / 2:
+                        print 'Find another split bottom'
+                        img_b = img[bottom_right[1]:bottom_right[1]+height, 0:self.screen_width]
+                        _, top_left_b, bottom_right_b = self.findMatchedArea(img_b, self.split, self.fp_split)
+                        _top_left = (top_left_b[0], top_left_b[1] + bottom_right[1])
+                        _bottom_right = (bottom_right_b[0], bottom_right_b[1] + bottom_right[1])
+                        return top_left, _bottom_right
+                        #cv2.rectangle(img, _top_left, _bottom_right, (0, 0, 0), 1)
+                    else:
+                        print 'Find another split above'
+                        img_a = img[top_left[1] - height:top_left[1], 0:self.screen_width]
+                        _, top_left_a, bottom_right_a = self.findMatchedArea(img_a, self.split, self.fp_split)
+                        _top_left = (top_left_a[0], top_left_a[1] + top_left[1] - height)
+                        _bottom_right = (bottom_right_a[0], bottom_right_a[1] + top_left[1]-height)
+                        return _top_left, bottom_right
+                        #cv2.rectangle(img, _top_left, _bottom_right, (0, 0, 0), 1)
+
+                    #cv2.imwrite('brower.png', img)
+                    break
+            except Exception as e:
+                logger.error('expect:' + repr(e))
+
+        return None, None
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        self.driver.find_element_by_name(u'首页')
+        self.driver.implicitly_wait(10)
+        # QQBrowser stores last access position(e.g. 看热点), check whether it stays at 看热点 when open it again
+        self.driver.get_screenshot_as_file("screenshot.png")
+        img = cv2.imread('screenshot.png', 0)
+        is_hot_header, _, _ = self.findMatchedArea(img, self.hot_header, self.fp_hot_header)
+        if is_hot_header != True:
+            self.driver.tap([(self.cf.getint('QQBrowser', 'hot_x'), self.cf.getint('QQBrowser', 'hot_y'))])
+            self.driver.implicitly_wait(10)
+        sleep(5)
+        #refresh to get latest news
+        self.driver.swipe(self.screen_width / 2, self.screen_height / 4, self.screen_width / 2,
+                        self.screen_height * 3 / 4, 3000)
+        sleep(6)
+        top_left, bottom_right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4,
+                                                 self.screen_width / 2, self.screen_height / 4)
+        img = cv2.imread('screenshot.png', 0)
+        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite('brower.png', img)
+        self.driver.quit()
+
 if __name__ == '__main__':
     try:
-        #parser = argparse.ArgumentParser(description="progrom description")
-        #parser.add_argument('-t', '--time', required=True, help="时间")
-        #parser.add_argument('-b', '--battery', type=float, required=True, help='电量')
-        #parser.add_argument('-w', '--webaccount', required=True, help='公众号')
-        #parser.add_argument('-a', '--ad', required=True, help='广告')
-        #parser.add_argument('-c', '--corner', required=True, help='角标')
-        #parser.add_argument('-at', '--type', default='banner', help='广告类型')
-        #parser.add_argument('-n', '--network', default='wifi', help='网络类型')
-        #parser.add_argument('-ti', '--title', default='', help='图文广告标题')
-        #parser.add_argument('-d', '--doc', default='', help='图文广告文案')
-        #args = parser.parse_args()
-
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
         #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        autoImg = QQBrowserAutoImg('16:20', 1, 'Screenshot_2017-09-04-18-26-04.jpeg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
         autoImg.compositeImage()
+
+        #img = cv2.imread('browser_split.png')
+        #split = img[3:4, 0:720]
+        #cv2.imwrite('browser_split.png', split)
     except Exception as e:
         traceback.print_exc()

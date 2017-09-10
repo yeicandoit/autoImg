@@ -33,7 +33,7 @@ def ptu():
     cc = conn.cursor()
     logger.debug('Opened database successfully')
     cursor = cc.execute('select app, adType, adImg, adCornerImg, wcType, network, time, battery, title, doc, id, '
-                        'doc1stLine, email from autoimage_addemand where date ="' + today + '" and status = 0')
+                        'doc1stLine, email from autoimage_addemand where status = 0')
 
     for row in cursor:
         app = row[0]

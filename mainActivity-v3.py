@@ -21,8 +21,8 @@ dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '汽
                   'travel':['旅行家杂志', '最旅行', '户外探险outdoor'],
                   'information':['第一财经资讯', '新闻晨报', '新闻早餐', '新闻夜航'],
                   'game':['游戏日报']}
-urlDemand = "http://mtest.optaim.com/api/picture/getautoimagedemand"
-urlUpdate = "http://mtest.optaim.com/api/picture/updatestatus"
+urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
+urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
 
 def run_shell(cmd):
     if 0 != os.system(cmd):
@@ -36,6 +36,7 @@ def ptu():
     headers = {'Authorization': authoration, 'Timestamp': timestamp}
     r = requests.get(urlDemand, headers=headers)
     rJson = r.json()
+    logger.debug(r.json())
     if rJson['result'] == 0:
         demands = rJson['message']['demands']
     else:
@@ -96,7 +97,7 @@ if __name__ == '__main__':
         while 1:
             ptu()
             mainActivity.ptu()
-            time.sleep(3)
+            time.sleep(10)
     except Exception as e:
         logger.error(traceback.format_exc())
         myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())

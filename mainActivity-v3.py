@@ -34,12 +34,16 @@ def ptu():
     timestamp = str(int(time.time()))
     authoration = hashlib.md5("zlkjdix827fhx_adfe" + timestamp).hexdigest()
     headers = {'Authorization': authoration, 'Timestamp': timestamp}
-    r = requests.get(urlDemand, headers=headers)
-    rJson = r.json()
-    logger.debug(r.json())
-    if rJson['result'] == 0:
-        demands = rJson['message']['demands']
-    else:
+    try:
+        r = requests.get(urlDemand, headers=headers)
+        rJson = r.json()
+        logger.debug(r.json())
+        if rJson['result'] == 0:
+            demands = rJson['message']['demands']
+        else:
+            demands = []
+    except Exception as e:
+        logger.error(traceback.format_exc())
         demands = []
 
     for row in demands:

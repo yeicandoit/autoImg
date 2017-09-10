@@ -252,8 +252,7 @@ class WebChatAutoImg(AutoImg):
         cnt = 0
         while 1:
             cnt = cnt + 1
-            if cnt == 100:
-                break
+            assert cnt != 100, "Do not find webcat ad area"
             try:
                 self.driver.swipe(start_width, start_height, end_width, end_height)
                 self.driver.implicitly_wait(10)
@@ -594,13 +593,13 @@ class QQBrowserAutoImg(AutoImg):
         """ We assume that ad area is less than half screen, then we have following logic.
             QQBrowser will not push ad when accessed too much!!! so set one news area to be ad area.
         """
-        for _ in (0,random.randint(3, 20)):
+        for _ in (0,random.randint(2, 20)):
             self.driver.swipe(start_width, start_height, end_width, end_height)
+            self.driver.implicitly_wait(10)
         cnt = 0
         while 1:
             cnt = cnt + 1
-            if cnt == 10:
-                break
+            assert cnt != 10, "Do not find ad area"
             try:
                 self.driver.swipe(start_width, start_height, end_width, end_height)
                 self.driver.implicitly_wait(10)
@@ -608,35 +607,42 @@ class QQBrowserAutoImg(AutoImg):
                 img = cv2.imread('screenshot.png', 0)
                 ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
                 if ok:
-                    #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
-                    # Find ad' bottom split line
-                    #img_bottom = img[top_left[1]:top_left[1]+self.cf.getint('QQBrowser', 'ad_bottom'),
-                    #             0:self.screen_width]
-                    #is_bottom, top_left1, bottom_right1 = self.findMatchedArea(img_bottom, self.split, self.fp_split)
-                    height = self.cf.getint('QQBrowser', 'ad_height')
-                    if bottom_right[1] <= self.screen_height / 2:
-                        print 'Find another split bottom'
-                        img_b = img[bottom_right[1]:bottom_right[1]+height, 0:self.screen_width]
-                        _, top_left_b, bottom_right_b = self.findMatchedArea(img_b, self.split, self.fp_split)
-                        _top_left = (top_left_b[0], top_left_b[1] + bottom_right[1])
-                        _bottom_right = (bottom_right_b[0], bottom_right_b[1] + bottom_right[1])
-                        return top_left, _bottom_right
-                        #cv2.rectangle(img, _top_left, _bottom_right, (0, 0, 0), 1)
-                    else:
-                        print 'Find another split above'
-                        img_a = img[top_left[1] - height:top_left[1], 0:self.screen_width]
-                        _, top_left_a, bottom_right_a = self.findMatchedArea(img_a, self.split, self.fp_split)
-                        _top_left = (top_left_a[0], top_left_a[1] + top_left[1] - height)
-                        _bottom_right = (bottom_right_a[0], bottom_right_a[1] + top_left[1]-height)
-                        return _top_left, bottom_right
-                        #cv2.rectangle(img, _top_left, _bottom_right, (0, 0, 0), 1)
-
-                    #cv2.imwrite('brower.png', img)
+                    # Do not insert ad in page which has already had an ad
+                    has_ad_flag, _, _ = self.findMatchedArea(img, self.ad_flag, self.fp_ad_flag)
+                    if has_ad_flag:
+                        continue
+                    if self.cf.getint('QQBrowser', 'bottom_y') - top_left[1] < self.cf.getint('QQBrowser', 'blank_height') + 3:
+                        continue
                     break
             except Exception as e:
                 logger.error('expect:' + repr(e))
 
-        return None, None
+        return top_left, bottom_right
+
+    def assembleImg(self):
+        blank_height = self.cf.getint('QQBrowser', 'blank_height')
+        ad_width = self.cf.getint('QQBrowser', 'ad_width')
+        ad_height = self.cf.getint('QQBrowser', 'ad_height')
+        split_ad_dis = self.cf.getint('QQBrowser', 'split_ad_dis')
+        flag_x = self.cf.getint('QQBrowser', 'flag_x')
+        flag_y = self.cf.getint('QQBrowser', 'flag_y')
+        flag_width = self.cf.getint('QQBrowser', 'flag_width')
+        flag_height = self.cf.getint('QQBrowser', 'flag_height')
+        ad_x = (self.screen_width - ad_width) / 2
+
+        blank = cv2.imread(self.cf.get('image_path', 'browser_blank'))
+        bkg = cv2.resize(blank, (self.screen_width, blank_height))
+        ad = cv2.imread(self.img_paste_ad)
+
+        paste_ad = cv2.resize(ad, (ad_width, ad_height))
+        bkg[split_ad_dis:split_ad_dis+ad_height, ad_x:ad_x+ad_width] = paste_ad
+
+        bkg[blank_height - 1:blank_height, 0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'browser_split'))
+        bkg[flag_y:flag_y+flag_height, flag_x:flag_x+flag_width] = cv2.imread(self.cf.get('image_path', 'browser_ad'))
+        cv2.imwrite('browser.png', bkg)
+
+
+        return bkg
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -657,9 +663,21 @@ class QQBrowserAutoImg(AutoImg):
         sleep(6)
         top_left, bottom_right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4,
                                                  self.screen_width / 2, self.screen_height / 4)
-        img = cv2.imread('screenshot.png', 0)
-        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
-        cv2.imwrite('brower.png', img)
+
+        ad = self.assembleImg()
+        img = cv2.imread('screenshot.png')
+        bottom_y = self.cf.getint('QQBrowser', 'bottom_y')
+        blank_height = self.cf.getint('QQBrowser', 'blank_height')
+        ad_bottom_height = bottom_y - bottom_right[1] - blank_height
+        img[bottom_y-ad_bottom_height: bottom_y,0:self.screen_width] = \
+            img[bottom_right[1]:bottom_right[1]+ad_bottom_height, 0:self.screen_width]
+        img[bottom_right[1]:bottom_right[1]+blank_height, 0:self.screen_width] = ad
+
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+        #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite(self.composite_ads_path, img)
         self.driver.quit()
 
 if __name__ == '__main__':
@@ -669,8 +687,8 @@ if __name__ == '__main__':
         #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        autoImg = QQBrowserAutoImg('16:20', 1, 'Screenshot_2017-09-04-18-26-04.jpeg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        #autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
         autoImg.compositeImage()
 
         #img = cv2.imread('browser_split.png')

@@ -582,6 +582,13 @@ class QQBrowserAutoImg(AutoImg):
         self.split = cv2.imread(self.cf.get('image_path', 'browser_split'), 0)
         self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
 
+        self.ad_desc_pos = (self.cf.getint('QQBrowser', 'desc_x'), self.cf.getint('QQBrowser', 'desc_y'))
+        desc_color = self.cf.getint('QQBrowser', 'desc_color')
+        self.ad_desc_color = (desc_color, desc_color, desc_color)
+        self.ad_doc_pos = (self.cf.getint('QQBrowser', 'doc_x'), self.cf.getint('QQBrowser', 'doc_y'))
+        doc_color = self.cf.getint('QQBrowser', 'doc_color')
+        self.ad_doc_color = (doc_color, doc_color, doc_color)
+
         self.desired_caps = {
             'platformName': 'Android',
             'platformVersion': '4.4.2',
@@ -641,8 +648,16 @@ class QQBrowserAutoImg(AutoImg):
         bkg[flag_y:flag_y+flag_height, flag_x:flag_x+flag_width] = cv2.imread(self.cf.get('image_path', 'browser_ad'))
         cv2.imwrite('browser.png', bkg)
 
+        # Print doc and desc in the bkg
+        ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
+        im = Image.open('browser.png')
+        draw = ImageDraw.Draw(im)
+        draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
+        ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
+        draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
+        im.save('browser.png')
 
-        return bkg
+        return cv2.imread('browser.png')
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -656,7 +671,7 @@ class QQBrowserAutoImg(AutoImg):
         if is_hot_header != True:
             self.driver.tap([(self.cf.getint('QQBrowser', 'hot_x'), self.cf.getint('QQBrowser', 'hot_y'))])
             self.driver.implicitly_wait(10)
-        sleep(5)
+        sleep(8)
         #refresh to get latest news
         self.driver.swipe(self.screen_width / 2, self.screen_height / 4, self.screen_width / 2,
                         self.screen_height * 3 / 4, 3000)
@@ -688,7 +703,8 @@ if __name__ == '__main__':
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+                                   u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()
 
         #img = cv2.imread('browser_split.png')

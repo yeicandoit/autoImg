@@ -157,6 +157,37 @@ class AutoImg:
 
         return True, img
 
+    def circle_new(self, img_path):
+        ima = Image.open(img_path).convert("RGBA")
+        size = ima.size
+        r2 = min(size[0], size[1])
+        if size[0] != size[1]:
+            ima = ima.resize((r2, r2), Image.ANTIALIAS)
+        circle = Image.new('L', (r2, r2), 0)
+        draw = ImageDraw.Draw(circle)
+        draw.ellipse((0, 0, r2, r2), fill=255)
+        alpha = Image.new('L', (r2, r2), 255)
+        alpha.paste(circle, (0, 0))
+        ima.putalpha(alpha)
+        ima.save('tmp.png')
+        return cv2.imread('tmp.png')
+
+    def circle_corder_image(self, img_path, radius=30):
+        im = Image.open(img_path).convert("RGBA")
+        rad = radius  # 设置半径
+        circle = Image.new('L', (rad * 2, rad * 2), 0)
+        draw = ImageDraw.Draw(circle)
+        draw.ellipse((0, 0, rad * 2, rad * 2), fill=255)
+        alpha = Image.new('L', im.size, 255)
+        w, h = im.size
+        alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
+        alpha.paste(circle.crop((0, rad, rad, rad * 2)), (0, h - rad))
+        alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
+        alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
+        im.putalpha(alpha)
+        im.save('tmp-corner0.png')
+        return 'tmp-corner0.png'
+
     def start(self):
         pass
 
@@ -478,17 +509,30 @@ class WebChatAutoImg(AutoImg):
 
 class QQAutoImg(AutoImg):
     def __init__(self, plugin, city, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo=''):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
+
         self.plugin = plugin
-        self.city = city
-        self.img_hot_city = cv2.imread(self.cf.get('image_path', 'hot_city'), 0)
-        self.fp_hot_city = str(imagehash.dhash(Image.fromarray(self.img_hot_city)))
-        logger.debug("plugin:%s, city:%s", self.plugin, self.city)
-        logger.debug("img_hot_city fingerprint:%s", self.fp_hot_city)
-        self.general_cities = ['hefei', 'fuzhou', 'wuhan']
-        self.city_pre = {'hefei':'H', 'fuzhou':'F', 'wuhan':'W'}
+
+        # Set weather args
+        if 'weather' == plugin:
+            self.city = city
+            self.img_hot_city = cv2.imread(self.cf.get('image_path', 'hot_city'), 0)
+            self.fp_hot_city = str(imagehash.dhash(Image.fromarray(self.img_hot_city)))
+            logger.debug("plugin:%s, city:%s", self.plugin, self.city)
+            logger.debug("img_hot_city fingerprint:%s", self.fp_hot_city)
+            self.general_cities = ['hefei', 'fuzhou', 'wuhan']
+            self.city_pre = {'hefei':'H', 'fuzhou':'F', 'wuhan':'W'}
+
+        # Set feeds args
+        if 'feeds' == plugin:
+            self.logo = logo
+            self.ad_flag = cv2.imread(self.cf.get('image_path', 'feeds_ad'), 0)
+            self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
+            self.split = cv2.imread(self.cf.get('image_path', 'feeds_split'), 0)
+            self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
+            logger.debug("fp_ad_flag:%s, fp_split:%s", self.fp_ad_flag, self.fp_split)
 
         self.desired_caps = {
             'platformName': 'Android',
@@ -506,7 +550,7 @@ class QQAutoImg(AutoImg):
         is_hot_city = self.hammingDistOK(fp, self.fp_hot_city)
         return is_hot_city, top_left, bottom_right
 
-    def start(self):
+    def weatherStart(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
         el = self.driver.find_element_by_name(u"联系人").click()
@@ -569,6 +613,138 @@ class QQAutoImg(AutoImg):
         cv2.imwrite(self.composite_ads_path, im)
         self.driver.quit()
 
+    def swipe(self, start_width, start_height, end_width, end_height):
+        """"Meet error when swipe in QQ dongtai, use this function to swipe even meeting error
+        """
+        try:
+            self.driver.swipe(start_width, start_height, end_width, end_height)
+            self.driver.implicitly_wait(10)
+        except Exception as e:
+            pass
+
+    def findAdArea(self, start_width, start_height, end_width, end_height):
+        """ QQ dongtai will push ad in the beginning dongtai.
+            So insert one ad between the first few dongtai.
+        """
+        for _ in (0, random.randint(0, 2)):
+            self.swipe(start_width, start_height, end_width, end_height)
+        cnt = 0
+        while 1:
+            cnt = cnt + 1
+            assert cnt != 10, "Do not find ad area"
+            try:
+                self.swipe(start_width, start_height, end_width, end_height)
+                self.driver.get_screenshot_as_file("screenshot.png")
+                img = cv2.imread('screenshot.png', 0)
+                ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
+                if ok:
+                    # Do not insert ad in page which has already had an ad
+                    has_ad_flag, _, _ = self.findMatchedArea(img, self.ad_flag, self.fp_ad_flag)
+                    if has_ad_flag:
+                        continue
+                    if self.screen_height - bottom_right[1] < self.cf.getint('QQFeeds', 'blank_height') + 3:
+                        continue
+                    break
+            except Exception as e:
+                logger.error('expect:' + repr(e))
+#
+        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite('feeds.png', img)
+        return top_left, bottom_right
+
+    def assembleFeedsAd(self):
+        blank_height = self.cf.getint('QQFeeds', 'blank_height')
+        flag_x = self.cf.getint('QQFeeds', 'flag_x')
+        flag_y = self.cf.getint('QQFeeds', 'flag_y')
+        flag_width = self.cf.getint('QQFeeds', 'flag_width')
+        flag_height = self.cf.getint('QQFeeds', 'flag_height')
+        logo_radius = self.cf.getint('QQFeeds', 'logo_radius')
+        logo_x = self.cf.getint('QQFeeds', 'logo_x')
+        logo_y = self.cf.getint('QQFeeds', 'logo_y')
+        line_y = self.cf.getint('QQFeeds', 'line_y')
+        split_height = self.cf.getint('QQFeeds', 'split_height')
+
+        ad_width = self.cf.getint('QQFeeds', 'ad_width')
+        ad_height = self.cf.getint('QQFeeds', 'ad_height')
+        ad_bk_width = self.cf.getint('QQFeeds', 'ad_bk_width')
+        ad_bk_height = self.cf.getint('QQFeeds', 'ad_bk_height')
+        ad_bk_x = (self.screen_width - ad_width) / 2
+        ad_bk_y = self.cf.getint('QQFeeds', 'ad_bk_y')
+        ad_bk_radius = self.cf.getint('QQFeeds', 'ad_bk_radius')
+        recom_width = self.cf.getint('QQFeeds', 'recom_width')
+        reocm_height = self.cf.getint('QQFeeds', 'recom_height')
+
+        blank = cv2.imread(self.cf.get('image_path', 'feeds_blank'))
+        bkg = cv2.resize(blank, (self.screen_width, blank_height))
+        # Add logo
+        logo = self.circle_new(self.logo)
+        logo = cv2.resize(logo, (logo_radius, logo_radius))
+        bkg[logo_y:logo_y+logo_radius, logo_x:logo_x+logo_radius] = logo
+        # Add flag
+        bkg[flag_y:flag_y+flag_height, flag_x:flag_x+flag_width] = cv2.imread(self.cf.get('image_path', 'feeds_ad'))
+        # Add line
+        bkg[line_y:line_y+1, 0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'feeds_line'))
+
+        # Add split
+        bkg[blank_height-split_height:blank_height, 0:self.screen_width] \
+            = cv2.imread(self.cf.get('image_path', 'feeds_split'))
+
+        # Add ad and recomment
+        ad_bk = cv2.imread(self.cf.get('image_path', 'feeds_ad_bk'))
+        ad = cv2.imread(self.img_paste_ad)
+        ad = cv2.resize(ad, (ad_width, ad_height))
+        ad_bk[1:1+ad_height, 1:1+ad_width] = ad
+        ad_bk[1+ad_height:1+ad_height+reocm_height, 1:1+recom_width] \
+            = cv2.imread(self.cf.get('image_path', 'feeds_recom'))
+        cv2.imwrite('tmp.png', ad_bk)
+        ad_bk_img = self.circle_corder_image('tmp.png', ad_bk_radius)
+        cv2.imwrite('tmp.png', cv2.resize(blank, (ad_bk_width, ad_bk_height)))
+        ad_bk_ = self.warterMark('tmp.png', ad_bk_img)
+        #TODO, if doc has two lines, should calculate ad_bk position
+        bkg[ad_bk_y:ad_bk_y+ad_bk_height, ad_bk_x:ad_bk_x+ad_bk_width] = ad_bk_
+
+        cv2.imwrite('tmp.png', bkg)
+
+        # Print doc and desc in the bkg
+        #ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'doc_size'))
+        #im = Image.open('browser.png')
+        #draw = ImageDraw.Draw(im)
+        #draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
+        #ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'desc_size'))
+        #draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
+        #im.save('tmp.png')
+
+        return cv2.imread('tmp.png')
+
+    def feedsStart(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        self.driver.find_element_by_name(u"动态").click()
+        self.driver.implicitly_wait(10)
+        self.driver.find_element_by_name(u"好友动态").click()
+        self.driver.implicitly_wait(10)
+        sleep(5)
+        top_left, bottom_right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4,
+                                                 self.screen_width / 2, self.screen_height / 4)
+        ad = self.assembleFeedsAd()
+        #self.driver.get_screenshot_as_file('screenshot.png')
+
+        self.driver.quit()
+
+    def compositeImage(self):
+        try:
+            if 'weather' == self.plugin:
+                self.weatherStart()
+                return True
+            if 'feeds' == self.plugin:
+                self.feedsStart()
+                return True
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            if self.driver:
+                self.driver.quit()
+            return False
+
 class QQBrowserAutoImg(AutoImg):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png',
                  ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
@@ -598,7 +774,7 @@ class QQBrowserAutoImg(AutoImg):
         }
     def findAdArea(self, start_width, start_height, end_width, end_height):
         """ We assume that ad area is less than half screen, then we have following logic.
-            QQBrowser will not push ad when accessed too much!!! so set one news area to be ad area.
+            QQBrowser will not push ad when accessed too much!!! so insert one ad between news area.
         """
         for _ in (0,random.randint(2, 20)):
             self.driver.swipe(start_width, start_height, end_width, end_height)
@@ -618,6 +794,7 @@ class QQBrowserAutoImg(AutoImg):
                     has_ad_flag, _, _ = self.findMatchedArea(img, self.ad_flag, self.fp_ad_flag)
                     if has_ad_flag:
                         continue
+                    #TODO When doc line is 2, ad area height will be bigger than blank_height, should consider this
                     if self.cf.getint('QQBrowser', 'bottom_y') - top_left[1] < self.cf.getint('QQBrowser', 'blank_height') + 3:
                         continue
                     break
@@ -702,13 +879,15 @@ if __name__ == '__main__':
         #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        #autoImg = QQAutoImg('QQ', 'shenzhen', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-                                   u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
+        #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
+        autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        #autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()
 
-        #img = cv2.imread('browser_split.png')
-        #split = img[3:4, 0:720]
-        #cv2.imwrite('browser_split.png', split)
+        #img = cv2.imread('gray_line.png')
+        #line = img[0:1, 0:10]
+        #ad_bk = cv2.resize(line, (680, 481))
+        #cv2.imwrite('ad_bk.png', ad_bk)
     except Exception as e:
         traceback.print_exc()

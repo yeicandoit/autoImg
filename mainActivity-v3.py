@@ -48,27 +48,31 @@ def ptu():
 
     for row in demands:
         app = row['app']
-        if 'weixin' == app:
-            adType = row['adType']
-            wcType = row['wcType']
-            network = row['network']
-            mtime = row['time']
-            battery = row['battery']
-            title = row['title']
-            doc = row['doc']
-            tId = row['id']
-            doc1stLine = row['doc1stLine']
-            email = row['email']
-            webAccount = row['webAccount']
-            savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
+        adType = row['adType']
+        wcType = row['wcType']
+        network = row['network']
+        mtime = row['time']
+        battery = row['battery']
+        title = row['title']
+        doc = row['doc']
+        tId = row['id']
+        doc1stLine = row['doc1stLine']
+        email = row['email']
+        webAccount = row['webAccount']
+        city = row['city']
+        savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
 
-            suffix = os.path.splitext(row['adImg'])[1]
-            adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
-            urllib.urlretrieve(row['adImg'], adImg)
-            if 0 == row['adCornerType']: #活动推广
+        suffix = os.path.splitext(row['adImg'])[1]
+        adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
+        urllib.urlretrieve(row['adImg'], adImg)
+
+        if 'weixin' == app:
+            if 0 == row['adCornerType']:  # 活动推广
                 adCornerImg = 'ad_area/corner-mark.png'
-            else: #商品推广
+            elif 1 == row['adCornerType']:  # 商品推广
                 adCornerImg = 'ad_area/corner-mark-1.png'
+            elif 2 == row['adCornerType']:  # 应用下载
+                adCornerImg = 'ad_area/corner-mark-2.png'
 
             if webAccount:
                 wa = webAccount
@@ -76,31 +80,38 @@ def ptu():
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
             ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
-                                 title, doc, doc1stLine, savepath)
-            if ai.compositeImage():
-                logger.debug("composite image OK!!!")
-                parameters = {'id': tId, 'status': 1}
-                requests.get(urlUpdate, headers=headers, params=parameters)
-                if email:
-                    myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), savepath)
-            else:
-                content = 'Failed ad info is<br> app:' + app + u'<br> 广告类型:' + adType \
-                          + u'<br> 广告:' + adImg + u'<br> 角标:' + adCornerImg \
-                          + u'<br> 公众号:' + wa + u'<br> 网络:' + network \
-                          + u'<br> 时间:' + mtime + u'<br> 电量:' + str(battery) \
-                          + u'<br> 标题:' + title + u'<br> 文案:' + doc \
-                          + '<br> DB id:' + str(tId) + u'<br> 第一行文案长度:' + str(doc1stLine) \
-                          + u'<br> 邮箱:' + email
-                myEmail.send_email('wangqiang@optaim.com', content)
-                logger.warn("Failed to composite image:" + content)
+                                        title, doc, doc1stLine, savepath)
+        elif 'QQWeather' == app:
+            adCornerImg = 'ad_area/corner-ad.png'
+            ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
+                                   title, doc, doc1stLine, savepath)
+        elif 'QQBrowser' == app:
+            adCornerImg = ''
+            ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath)
+        if ai.compositeImage():
+            logger.debug("composite image OK!!!")
+            parameters = {'id': tId, 'status': 1}
+            requests.get(urlUpdate, headers=headers, params=parameters)
+            files = [savepath, 'screenshot.png']
+            if email:
+                myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), files)
         else:
-            logger.warn('Only support weixin now')
+            content = 'Failed ad info is<br> app:' + app + u'<br> 广告类型:' + adType \
+                      + u'<br> 广告:' + adImg + u'<br> 角标:' + adCornerImg \
+                      + u'<br> 公众号:' + wa + u'<br> 网络:' + network \
+                      + u'<br> 时间:' + mtime + u'<br> 电量:' + str(battery) \
+                      + u'<br> 标题:' + title + u'<br> 文案:' + doc \
+                      + '<br> DB id:' + str(tId) + u'<br> 第一行文案长度:' + str(doc1stLine) \
+                      + u'<br> 邮箱:' + email
+            myEmail.send_email('wangqiang@optaim.com', content)
+            logger.warn("Failed to composite image:" + content)
 
 if __name__ == '__main__':
     try:
         while 1:
             ptu()
-            mainActivity.ptu()
+            #mainActivity.ptu()
             time.sleep(10)
     except Exception as e:
         logger.error(traceback.format_exc())

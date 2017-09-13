@@ -876,11 +876,11 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
-                                 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+        #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
+        autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
         #autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')

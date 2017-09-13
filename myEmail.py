@@ -66,7 +66,7 @@ def get_mails(prefix, demand_day):
     server.quit()
     return  False
 
-def send_email(to, content='', file=None):
+def send_email(to, content='', files=None):
     user = "wangqiang@optaim.com"
     pwd = "Zhiyunzhong6868"
 
@@ -76,10 +76,11 @@ def send_email(to, content='', file=None):
     msg["To"] = to
     msg.attach(MIMEText(content, 'html', 'utf-8'))
 
-    if None != file:
-        part = MIMEApplication(open(file, 'rb').read())
-        part.add_header('Content-Disposition', 'attachment', filename=file)
-        msg.attach(part)
+    if None != files:
+        for file in files:
+            part = MIMEApplication(open(file, 'rb').read())
+            part.add_header('Content-Disposition', 'attachment', filename=file)
+            msg.attach(part)
 
     s = smtplib.SMTP("smtp.exmail.qq.com", timeout=30)  # 连接smtp邮件服务器,端口默认是25
     s.login(user, pwd)  # 登陆服务器

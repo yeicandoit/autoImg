@@ -230,13 +230,11 @@ class WebChatAutoImg(AutoImg):
 
         self.desired_caps = {
             'platformName': 'Android',
-            'platformVersion': '4.4.2',
-            'deviceName': 'H60-L11',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
             'appPackage': 'com.tencent.mm',
             'appActivity': '.ui.LauncherUI',
-            'chromeOptions': {
-                'androidProcess': 'com.tencent.mm:tools'
-            }
+            'udid': '192.168.56.101:5555',
         }
         self.NONE = 0
         self.GOOD_MESSAGE = 1
@@ -536,10 +534,11 @@ class QQAutoImg(AutoImg):
 
         self.desired_caps = {
             'platformName': 'Android',
-            'platformVersion': '4.4.2',
-            'deviceName': 'H60-L11',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
             'appPackage': 'com.tencent.mobileqq',
             'appActivity': '.activity.SplashActivity',
+            'udid': '192.168.56.101:5555',
         }
 
     def findHotCity(self, img):
@@ -771,6 +770,7 @@ class QQBrowserAutoImg(AutoImg):
             'deviceName': 'H60-L11',
             'appPackage': 'com.tencent.mtt',
             'appActivity': '.MainActivity',
+            'udid': 'DU2TDM158J029642',
         }
     def findAdArea(self, start_width, start_height, end_width, end_height):
         """ We assume that ad area is less than half screen, then we have following logic.
@@ -876,12 +876,13 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ads/corner-mark.png', 'image_text', 'wifi', title, doc)
+        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+                                 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
-        autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        #autoImg = QQBrowserAutoImg('16:20', 1, 'browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
+        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()
 

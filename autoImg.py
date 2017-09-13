@@ -15,10 +15,11 @@ logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main.autoImg')
 
 class AutoImg:
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/H60-L11.conf'):
         self.cf = ConfigParser.ConfigParser()
-        self.cf.read('conf/H60-L11.conf')
+        self.cf.read(conf)
+        self.conf = conf
 
         self.time = time
         self.battery = battery
@@ -117,18 +118,29 @@ class AutoImg:
         bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
 
         # Set battery
-        bc_width = bc_bottom_right[0] - bc_top_left[0]
-        bc_height = bc_bottom_right[1] - bc_top_left[1]
-        bc_setting_width = int(bc_width * battery)
-        img_bc = cv2.imread(self.ad_area_path + 'battery-capacity.png')
-        img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
-        img_battery = cv2.imread(self.ad_area_path + 'battery.png')
-        img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
         y = self.cf.getint('battery', 'top_left_y')
         y1 = self.cf.getint('battery', 'bottom_right_y')
         x = self.cf.getint('battery', 'top_left_x')
         x1 = self.cf.getint('battery', 'bottom_right_x')
-        img[y:y1, x:x1] = img_battery
+        if 'conf/H60-L11.conf' == self.conf:
+            bc_width = bc_bottom_right[0] - bc_top_left[0]
+            bc_height = bc_bottom_right[1] - bc_top_left[1]
+            bc_setting_width = int(bc_width * battery)
+            img_bc = cv2.imread(self.ad_area_path + 'battery-capacity.png')
+            img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
+            img_battery = cv2.imread(self.ad_area_path + 'battery.png')
+            img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
+            img[y:y1, x:x1] = img_battery
+        elif 'conf/HTC-D316d.conf' == self.conf:
+            img_battery = cv2.imread(self.cf.get('image_path', 'battery'))
+            img_capacity = cv2.imread(self.cf.get('image_path', 'battery_capacity'))
+            b_width = x1 -x
+            bc_height = self.cf.getint('battery', 'capacity_height')
+            b_height = y1 - y
+            bc_setting_height = int(bc_height*battery)
+            img_capacity = cv2.resize(img_capacity, (b_width, bc_setting_height))
+            img_battery[b_height-bc_setting_height:b_height, 0:b_width] = img_capacity
+            img[y:y1, x:x1] = img_battery
 
         # Set time
         IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
@@ -745,10 +757,10 @@ class QQAutoImg(AutoImg):
             return False
 
 class QQBrowserAutoImg(AutoImg):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png',
-                 ad_type='banner', network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/HTC-D316d.conf'):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path)
+                         doc, doc1st_line, save_path, conf)
 
         self.ad_flag = cv2.imread(self.cf.get('image_path', 'browser_ad'), 0)
         self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
@@ -766,11 +778,11 @@ class QQBrowserAutoImg(AutoImg):
 
         self.desired_caps = {
             'platformName': 'Android',
-            'platformVersion': '4.4.2',
-            'deviceName': 'H60-L11',
+            'platformVersion': '4.3',
+            'deviceName': 'HTC D316d',
             'appPackage': 'com.tencent.mtt',
             'appActivity': '.MainActivity',
-            'udid': 'DU2TDM158J029642',
+            'udid': '0123456789ABCDEF',
         }
     def findAdArea(self, start_width, start_height, end_width, end_height):
         """ We assume that ad area is less than half screen, then we have following logic.
@@ -880,15 +892,15 @@ if __name__ == '__main__':
         #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
+        #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
         #autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-        #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
+        autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+                                   u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()
 
-        #img = cv2.imread('gray_line.png')
-        #line = img[0:1, 0:10]
+        #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')
+        #line = img[2:3, 0:540]
         #ad_bk = cv2.resize(line, (680, 481))
-        #cv2.imwrite('ad_bk.png', ad_bk)
+        #cv2.imwrite('browser_split.png', line)
     except Exception as e:
         traceback.print_exc()

@@ -61,6 +61,7 @@ def ptu():
         webAccount = row['webAccount']
         city = row['city']
         savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
+        wa = ''
 
         suffix = os.path.splitext(row['adImg'])[1]
         adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix

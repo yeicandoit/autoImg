@@ -90,7 +90,15 @@ def ptu():
             adCornerImg = ''
             ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
-        if ai.compositeImage():
+        else:
+            adCornerImg = ''
+            ai = None
+            parameters = {'id': tId, 'status': 1}
+            requests.get(urlUpdate, headers=headers, params=parameters)
+            if email:
+                myEmail.send_email(email, '现在不支持"QQ动态"截图'.decode('utf-8'))
+            logger.info("Do not support QQ dongtai now!!!")
+        if None != ai and ai.compositeImage():
             logger.debug("composite image OK!!!")
             parameters = {'id': tId, 'status': 1}
             requests.get(urlUpdate, headers=headers, params=parameters)
@@ -109,11 +117,11 @@ def ptu():
             logger.warn("Failed to composite image:" + content)
 
 if __name__ == '__main__':
-    try:
-        while 1:
+    while 1:
+        try:
             ptu()
             #mainActivity.ptu()
             time.sleep(10)
-    except Exception as e:
-        logger.error(traceback.format_exc())
-        myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())

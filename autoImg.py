@@ -169,7 +169,7 @@ class AutoImg:
 
         return True, img
 
-    def circle_new(self, img_path):
+    def circle_new(self, img_path, bkg_path):
         ima = Image.open(img_path).convert("RGBA")
         size = ima.size
         r2 = min(size[0], size[1])
@@ -180,9 +180,18 @@ class AutoImg:
         draw.ellipse((0, 0, r2, r2), fill=255)
         alpha = Image.new('L', (r2, r2), 255)
         alpha.paste(circle, (0, 0))
+        # The circle' four corners are different, so we only use one
+        radius = r2 / 2
+        corner = circle.crop((0, 0, radius, radius))
+        alpha.paste(corner, (0, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_90), (0, r2 - radius))
+        alpha.paste(corner.transpose(Image.ROTATE_270), (r2 - radius, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_180), (r2 - radius, r2 - radius))
         ima.putalpha(alpha)
-        ima.save('tmp.png')
-        return cv2.imread('tmp.png')
+        ima.save('tmp_img/circle_new.png')
+        circle_bkg = cv2.imread(bkg_path)
+        cv2.imwrite('tmp_img/circle_bkg.png', cv2.resize(circle_bkg, (r2, r2)))
+        return  self.warterMark('tmp_img/circle_bkg.png', 'tmp_img/circle_new.png')
 
     def circle_corder_image(self, img_path, radius=30):
         im = Image.open(img_path).convert("RGBA")
@@ -192,13 +201,15 @@ class AutoImg:
         draw.ellipse((0, 0, rad * 2, rad * 2), fill=255)
         alpha = Image.new('L', im.size, 255)
         w, h = im.size
-        alpha.paste(circle.crop((0, 0, rad, rad)), (0, 0))
-        alpha.paste(circle.crop((0, rad, rad, rad * 2)), (0, h - rad))
-        alpha.paste(circle.crop((rad, 0, rad * 2, rad)), (w - rad, 0))
-        alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
+        #The circle' four corners are different, so we only use one
+        corner = circle.crop((0, 0, rad, rad))
+        alpha.paste(corner, (0, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_90), (0, h - rad))
+        alpha.paste(corner.transpose(Image.ROTATE_270), (w - rad, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_180), (w - rad, h - rad))
         im.putalpha(alpha)
-        im.save('tmp-corner0.png')
-        return 'tmp-corner0.png'
+        im.save('tmp_img/circle_corder.png')
+        return 'tmp_img/circle_corder.png'
 
     def start(self):
         pass
@@ -550,7 +561,7 @@ class QQAutoImg(AutoImg):
             self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
             self.split = cv2.imread(self.cf.get('image_path', 'feeds_split'), 0)
             self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
-            logger.debug("fp_ad_flag:%s, fp_split:%s", self.fp_ad_flag, self.fp_split)
+            logger.debug("logo:%s, fp_ad_flag:%s, fp_split:%s", self.logo, self.fp_ad_flag, self.fp_split)
 
         self.desired_caps = {
             'platformName': 'Android',
@@ -645,8 +656,8 @@ class QQAutoImg(AutoImg):
         """ QQ dongtai will push ad in the beginning dongtai.
             So insert one ad between the first few dongtai.
         """
-        for _ in (0, random.randint(0, 2)):
-            self.swipe(start_width, start_height, end_width, end_height)
+        #for _ in (0, random.randint(0, 2)):
+        #    self.swipe(start_width, start_height, end_width, end_height)
         cnt = 0
         while 1:
             cnt = cnt + 1
@@ -668,7 +679,6 @@ class QQAutoImg(AutoImg):
                 logger.error('expect:' + repr(e))
 #
         cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
-        cv2.imwrite('feeds.png', img)
         return top_left, bottom_right
 
     def assembleFeedsAd(self):
@@ -696,7 +706,7 @@ class QQAutoImg(AutoImg):
         blank = cv2.imread(self.cf.get('image_path', 'feeds_blank'))
         bkg = cv2.resize(blank, (self.screen_width, blank_height))
         # Add logo
-        logo = self.circle_new(self.logo)
+        logo = self.circle_new(self.logo, self.cf.get('image_path', 'feeds_blank'))
         logo = cv2.resize(logo, (logo_radius, logo_radius))
         bkg[logo_y:logo_y+logo_radius, logo_x:logo_x+logo_radius] = logo
         # Add flag
@@ -715,25 +725,30 @@ class QQAutoImg(AutoImg):
         ad_bk[1:1+ad_height, 1:1+ad_width] = ad
         ad_bk[1+ad_height:1+ad_height+reocm_height, 1:1+recom_width] \
             = cv2.imread(self.cf.get('image_path', 'feeds_recom'))
-        cv2.imwrite('tmp.png', ad_bk)
-        ad_bk_img = self.circle_corder_image('tmp.png', ad_bk_radius)
-        cv2.imwrite('tmp.png', cv2.resize(blank, (ad_bk_width, ad_bk_height)))
-        ad_bk_ = self.warterMark('tmp.png', ad_bk_img)
+        cv2.imwrite('tmp_img/tmp.png', ad_bk)
+        ad_bk_img = self.circle_corder_image('tmp_img/tmp.png', ad_bk_radius)
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(blank, (ad_bk_width, ad_bk_height)))
+        ad_bk_ = self.warterMark('tmp_img/tmp.png', ad_bk_img)
         #TODO, if doc has two lines, should calculate ad_bk position
         bkg[ad_bk_y:ad_bk_y+ad_bk_height, ad_bk_x:ad_bk_x+ad_bk_width] = ad_bk_
-
-        cv2.imwrite('tmp.png', bkg)
+        cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
-        #ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'doc_size'))
-        #im = Image.open('browser.png')
-        #draw = ImageDraw.Draw(im)
-        #draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
-        #ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'desc_size'))
-        #draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
-        #im.save('tmp.png')
+        im = Image.open('tmp_img/tmp.png')
+        draw = ImageDraw.Draw(im)
+        if '' != self.desc:
+            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'desc_size'))
+            ad_desc_pos = (self.cf.getint('QQFeeds', 'desc_x'), self.cf.getint('QQFeeds', 'desc_y'))
+            ad_desc_color = self.cf.getint('QQFeeds', 'desc_color')
+            draw.text(ad_desc_pos, self.desc, fill=(ad_desc_color, ad_desc_color, ad_desc_color), font=ttfont_)
+        if '' != self.doc:
+            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'doc_size'))
+            ad_doc_pos = (self.cf.getint('QQFeeds', 'doc_x'), self.cf.getint('QQFeeds', 'doc_y'))
+            ad_doc_color = self.cf.getint('QQFeeds', 'doc_color')
+            draw.text(ad_doc_pos, self.doc, fill=(ad_doc_color, ad_doc_color, ad_doc_color), font=ttfont)
+        im.save('tmp_img/tmp.png')
 
-        return cv2.imread('tmp.png')
+        return cv2.imread('tmp_img/tmp.png')
 
     def feedsStart(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -746,7 +761,20 @@ class QQAutoImg(AutoImg):
         top_left, bottom_right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4,
                                                  self.screen_width / 2, self.screen_height / 4)
         ad = self.assembleFeedsAd()
-        #self.driver.get_screenshot_as_file('screenshot.png')
+        img = cv2.imread('screenshot.png')
+
+        bottom_y = self.cf.getint('screen', 'height')
+        blank_height = self.cf.getint('QQFeeds', 'blank_height')
+        ad_bottom_height = bottom_y - bottom_right[1] - blank_height
+        img[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
+            img[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
+        img[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
+
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+        # cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite(self.composite_ads_path, img)
 
         self.driver.quit()
 
@@ -898,11 +926,12 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
-                                 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+        #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
+        autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
+                            'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')

@@ -295,8 +295,12 @@ class WebChatAutoImg(AutoImg):
             cnt = cnt + 1
             assert cnt != 100, "Do not find webcat ad area"
             try:
-                self.driver.swipe(start_width, start_height, end_width, end_height)
-                self.driver.implicitly_wait(10)
+                try:
+                    self.driver.swipe(start_width, start_height, end_width, end_height)
+                    self.driver.implicitly_wait(10)
+                except:
+                    sleep(1)
+                    pass
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 is_top, top_left, bottom_right = self.findAdAreaTop(img)
@@ -319,8 +323,12 @@ class WebChatAutoImg(AutoImg):
             if cnt == 5:
                 break
             try:
-                self.driver.swipe(start_width, start_height, end_width, end_height)
-                self.driver.implicitly_wait(10)
+                try:
+                    self.driver.swipe(start_width, start_height, end_width, end_height)
+                    self.driver.implicitly_wait(10)
+                except:
+                    sleep(1)
+                    pass
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 is_top, top_left, bottom_right = self.findAdAreaTop(img)
@@ -838,12 +846,14 @@ class QQBrowserAutoImg(AutoImg):
         cv2.imwrite('browser.png', bkg)
 
         # Print doc and desc in the bkg
-        ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
         im = Image.open('browser.png')
         draw = ImageDraw.Draw(im)
-        draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
-        ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
-        draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
+        if '' != self.doc:
+            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
+            draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
+        if '' != self.desc:
+            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
+            draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
         im.save('browser.png')
 
         return cv2.imread('browser.png')
@@ -888,7 +898,7 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+        autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)

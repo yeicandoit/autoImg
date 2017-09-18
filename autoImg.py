@@ -101,7 +101,7 @@ class AutoImg:
 
         return img
 
-    def header(self, time, battery, network):
+    def header(self, time, battery, network, image_cf_path='image_path'):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
         if len(time) < 5:
             return False, None
@@ -111,7 +111,7 @@ class AutoImg:
             return False, None
 
         # Set network
-        img = cv2.imread(self.cf.get('image_path', network))
+        img = cv2.imread(self.cf.get(image_cf_path, network))
 
         # battery capacity position in battery
         bc_bottom_right = (self.cf.getint('battery', 'capacity_bottom_right_x'), self.cf.getint('battery', 'capacity_bottom_right_y'))
@@ -126,14 +126,14 @@ class AutoImg:
             bc_width = bc_bottom_right[0] - bc_top_left[0]
             bc_height = bc_bottom_right[1] - bc_top_left[1]
             bc_setting_width = int(bc_width * battery)
-            img_bc = cv2.imread(self.ad_area_path + 'battery-capacity.png')
+            img_bc = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
             img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
-            img_battery = cv2.imread(self.ad_area_path + 'battery.png')
+            img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
             img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
             img[y:y1, x:x1] = img_battery
         elif 'conf/HTC-D316d.conf' == self.conf:
-            img_battery = cv2.imread(self.cf.get('image_path', 'battery'))
-            img_capacity = cv2.imread(self.cf.get('image_path', 'battery_capacity'))
+            img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
+            img_capacity = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
             b_width = x1 -x
             bc_height = self.cf.getint('battery', 'capacity_height')
             b_height = y1 - y
@@ -153,19 +153,19 @@ class AutoImg:
         h1 = NUM_TOP_LEFT_HEIGHT + IMG_NUM_HEIGHT
         w = NUM_TOP_LEFT_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[0]))
+        img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, time[0]))
         w = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[1]))
+        img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, time[1]))
         w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', 'colon'))
+        img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, 'colon'))
         w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[3]))
+        img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, time[3]))
         w = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
         w1 = NUM_TOP_LEFT_WIDTH + 4 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
-        img[h:h1, w:w1] = cv2.imread(self.cf.get('image_path', time[4]))
+        img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, time[4]))
 
         return True, img
 
@@ -614,12 +614,12 @@ class QQAutoImg(AutoImg):
         self.cf.getint('QQ_weather', 'ad_top_left_x'):self.cf.getint('QQ_weather', 'ad_bottom_right_x')] \
             = ad_watermark
 
-        ok, img_header = self.header(self.time, self.battery, self.network)
+        ok, img_header = self.header(self.time, self.battery, self.network, 'QQ_weather')
         if ok:
             im[0:self.ad_header_height, 0:self.ad_header_width] = img_header
-        #Set weather header, so its theme looks like "绅士"主题
+        #Set weather header, so its theme looks like "白色"主题
         im[self.cf.getint('QQ_weather', 'header_y1'):self.cf.getint('QQ_weather', 'header_y2'),
-            0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'weather_header'))
+            0:self.screen_width] = cv2.imread(self.cf.get('QQ_weather', 'weather_header'))
 
         cv2.imwrite(self.composite_ads_path, im)
         self.driver.quit()
@@ -888,14 +888,14 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
-        #                         'wifi', title, doc)
+        autoImg = WebChatAutoImg('16:20', 1, u'汽车之家', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+                                 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text', 'wifi')
-        #autoImg = QQAutoImg('weather', 'beijing', '16:20', 1, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi')
-        autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-                                   u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
+        #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')

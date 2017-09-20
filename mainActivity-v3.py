@@ -78,6 +78,8 @@ def ptu():
             if webAccount:
                 wa = webAccount
             else:
+                if '' == wcType:
+                    wcType = 'car';
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
             ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,

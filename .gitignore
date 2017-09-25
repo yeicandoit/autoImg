@@ -4,10 +4,12 @@ autoimage/migrations/*.pyc
 uploadpic/migrations/*.pyc
 webAutoImg/media/upload/*.jpg
 webAutoImg/media/upload/*.png
+webAutoImg/media/upload/*.jpeg
 webAutoImg/media/composite/*.png
+webAutoImg/db.sqlite3*
+webAutoImg/.idea/*
 font/MyriadPro*
 ads/*
 log/*
-webAutoImg/.idea/*
 .idea/*
 tmp_img/*

@@ -8,7 +8,6 @@ import traceback
 import time
 import logging
 import urllib
-import mainActivity
 import hashlib
 import requests
 
@@ -34,16 +33,12 @@ def ptu():
     timestamp = str(int(time.time()))
     authoration = hashlib.md5("zlkjdix827fhx_adfe" + timestamp).hexdigest()
     headers = {'Authorization': authoration, 'Timestamp': timestamp}
-    try:
-        r = requests.get(urlDemand, headers=headers)
-        rJson = r.json()
-        logger.debug(r.json())
-        if rJson['result'] == 0:
-            demands = rJson['message']['demands']
-        else:
-            demands = []
-    except Exception as e:
-        logger.error(traceback.format_exc())
+    r = requests.get(urlDemand, headers=headers)
+    rJson = r.json()
+    logger.debug(r.json())
+    if rJson['result'] == 0:
+        demands = rJson['message']['demands']
+    else:
         demands = []
 
     for row in demands:
@@ -122,8 +117,9 @@ if __name__ == '__main__':
     while 1:
         try:
             ptu()
-            #mainActivity.ptu()
             time.sleep(10)
         except Exception as e:
             logger.error(traceback.format_exc())
-            myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())
+            #If wifi is not connected, send_email will fail and this process will fail too, so do not send_email in Exception.
+            #myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())
+            time.sleep(60)

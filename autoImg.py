@@ -472,13 +472,13 @@ class WebChatAutoImg(AutoImg):
                 continue
 
     def checkArgs(self):
-        if 'image_text' == self.ad_type:
+        if 'banner' == self.ad_type:
             img_gray = cv2.imread(self.img_paste_ad, 0)
             mask_gray = cv2.imread(self.img_corner_mark, 0)
             w_mask, h_mask = mask_gray.shape[::-1]
             w_img, h_img = img_gray.shape[::-1]
             if w_img < w_mask or h_img < h_mask:
-                return False, u"微信图文角标尺寸大于广告尺寸，请确认上传广告大小并重新提交截图请求!"
+                return False, u"微信banner角标尺寸大于广告尺寸，请确认上传广告大小并重新提交截图请求!"
         return True, None
 
     def start(self):
@@ -940,13 +940,13 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+        #autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
         #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
-        autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-                            'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
-        #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
+        #                    'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
+        autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         autoImg.compositeImage()

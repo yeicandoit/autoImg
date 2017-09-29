@@ -95,7 +95,9 @@ def ptu():
             if email:
                 myEmail.send_email(email, '现在不支持"QQ动态"截图'.decode('utf-8'))
             logger.info("Do not support QQ dongtai now!!!")
-        if None != ai and ai.compositeImage():
+            continue
+        ok, mType, msg = ai.compositeImage()
+        if ok:
             logger.debug("composite image OK!!!")
             parameters = {'id': tId, 'status': 1}
             requests.get(urlUpdate, headers=headers, params=parameters)
@@ -109,9 +111,15 @@ def ptu():
                       + u'<br> 时间:' + mtime + u'<br> 电量:' + str(battery) \
                       + u'<br> 标题:' + title + u'<br> 文案:' + doc \
                       + '<br> DB id:' + str(tId) + u'<br> 第一行文案长度:' + str(doc1stLine) \
-                      + u'<br> 邮箱:' + email
+                      + u'<br> 邮箱:' + email \
+                      + u'<br><br>错误信息:' + msg
             myEmail.send_email('wangqiang@optaim.com', content)
             logger.warn("Failed to composite image:" + content)
+            if autoImg.AutoImg.TYPE_ARG == mType:
+                parameters = {'id': tId, 'status': 1}
+                requests.get(urlUpdate, headers=headers, params=parameters)
+                if email:
+                    myEmail.send_email(email, msg)
 
 if __name__ == '__main__':
     while 1:

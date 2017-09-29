@@ -15,6 +15,9 @@ logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main.autoImg')
 
 class AutoImg:
+    TYPE_ARG = 1
+    TYPE_START = 4
+
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/H60-L11.conf'):
         self.cf = ConfigParser.ConfigParser()
@@ -81,6 +84,9 @@ class AutoImg:
         mask_gray = cv2.imread(corner_mark, 0)
         w_mask, h_mask = mask_gray.shape[::-1]
         w_img, h_img = img_gray.shape[::-1]
+
+        assert w_img >= w_mask and h_img >= h_mask, "corner_mask size is bigger than ad"
+
         if 'top_right' == pos:
             mask_region = img[0:h_mask, w_img - w_mask:w_img]
         else:
@@ -214,15 +220,21 @@ class AutoImg:
     def start(self):
         pass
 
+    def checkArgs(self):
+        return True, None
+
     def compositeImage(self):
         try:
+            ok, msg = self.checkArgs()
+            if not ok:
+                return ok, AutoImg.TYPE_ARG, msg
             self.start()
-            return True
-        except Exception as e:
+            return True, None, None
+        except Exception:
             logger.error(traceback.format_exc())
             if self.driver:
                 self.driver.quit()
-            return False
+            return False, AutoImg.TYPE_START, traceback.format_exc()
 
 class WebChatAutoImg(AutoImg):
     def __init__(self, time, battery, webcat_account, img_paste_ad, img_corner_mark='ads/corner-mark.png',
@@ -458,6 +470,16 @@ class WebChatAutoImg(AutoImg):
                 break
             except:
                 continue
+
+    def checkArgs(self):
+        if 'image_text' == self.ad_type:
+            img_gray = cv2.imread(self.img_paste_ad, 0)
+            mask_gray = cv2.imread(self.img_corner_mark, 0)
+            w_mask, h_mask = mask_gray.shape[::-1]
+            w_img, h_img = img_gray.shape[::-1]
+            if w_img < w_mask or h_img < h_mask:
+                return False, u"微信图文角标尺寸大于广告尺寸，请确认上传广告大小并重新提交截图请求!"
+        return True, None
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -778,19 +800,11 @@ class QQAutoImg(AutoImg):
 
         self.driver.quit()
 
-    def compositeImage(self):
-        try:
+    def start(self):
             if 'weather' == self.plugin:
                 self.weatherStart()
-                return True
             if 'feeds' == self.plugin:
                 self.feedsStart()
-                return True
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            if self.driver:
-                self.driver.quit()
-            return False
 
 class QQBrowserAutoImg(AutoImg):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',

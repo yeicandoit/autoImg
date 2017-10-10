@@ -316,7 +316,7 @@ class WebChatAutoImg(AutoImg):
         cnt = 0
         while 1:
             cnt = cnt + 1
-            assert cnt != 100, "Do not find webcat ad area"
+            assert cnt != 300, "Do not find webcat ad area"
             try:
                 try:
                     self.driver.swipe(start_width, start_height, end_width, end_height)

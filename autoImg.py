@@ -936,6 +936,94 @@ class QQBrowserAutoImg(AutoImg):
         cv2.imwrite(self.composite_ads_path, img)
         self.driver.quit()
 
+class MoJiAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
+            'appPackage': 'com.moji.mjweather',
+            'appActivity': '.MainActivity',
+            'udid': '192.168.56.101:5555',
+        }
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        sleep(5)
+        self.driver.get_screenshot_as_file('tmp_img/moji.png')
+        self.driver.quit()
+
+class QSBKAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
+            'appPackage': 'qsbk.app',
+            'appActivity': '.activity.group.SplashGroup',
+            'udid': '192.168.56.101:5555',
+        }
+
+    def kaiStart(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        sleep(1)
+        self.driver.get_screenshot_as_file('screenshot.png')
+        im = cv2.imread('screenshot.png')
+        ad = cv2.imread(self.img_paste_ad)
+        ad_height = self.cf.getint("QSBK", "kai_height")
+        ad_width = self.cf.getint("screen", "width")
+        ad_resize = cv2.resize(ad, (ad_width, ad_height))
+        cv2.imwrite("tmp_img/qsbk.png", ad_resize)
+        img_corner = self.warterMark("tmp_img/qsbk.png", self.cf.get("QSBK", "skip_1"), "top_right")
+        cv2.imwrite("tmp_img/qsbk.png", img_corner)
+        img_corner_skip = self.warterMark("tmp_img/qsbk.png", self.cf.get("QSBK", "ad_corner"))
+        im[0:ad_height, 0:ad_width] = img_corner_skip
+        cv2.imwrite(self.composite_ads_path, im)
+
+        self.driver.quit()
+
+    def feedsStart(self):
+        pass
+
+    def start(self):
+        if 'kai' == self.ad_type:
+            self.kaiStart()
+        if 'feeds' == self.ad_type:
+            self.feedsStart()
+
+class ShuQiAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
+            'appPackage': 'com.shuqi.controller',
+            'appActivity': 'com.shuqi.activity.SplashActivity',
+            'udid': '192.168.56.101:5555',
+        }
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        self.driver.find_element_by_name(u"免费").click()
+        self.driver.implicitly_wait(10)
+        self.driver.get_screenshot_as_file('screenshot.png')
+        self.driver.quit()
+
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
@@ -946,9 +1034,12 @@ if __name__ == '__main__':
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
-        autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
+        #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
+        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_kai.jpg', 'ad_area/corner-ad.png', 'kai', '4G')
+        #autoImg = ShuQiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')

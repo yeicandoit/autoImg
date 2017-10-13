@@ -1016,12 +1016,99 @@ class ShuQiAutoImg(AutoImg):
             'udid': '192.168.56.101:5555',
         }
 
+    def bottom(self, time, battery):
+        """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
+        if len(time) < 5:
+            return False, None
+        if battery > self.cf.getfloat('battery', 'capacity_max') or battery < self.cf.getfloat('battery', 'capacity_min'):
+            return  False, None
+
+        img = cv2.imread(self.cf.get("ShuQi", "bottom"))
+        # battery capacity position in battery
+        bc_top_left = (self.cf.getint('ShuQi', 'capacity_top_left_x'), self.cf.getint('ShuQi', 'capacity_top_left_y'))
+
+        # Set battery
+        capacity_width = self.cf.getint("ShuQi", "capacity_width")
+        capacity_height = self.cf.getint("ShuQi", "capacity_height")
+        capacity_setting_width = int(capacity_width * battery)
+        img_capacity = cv2.imread(self.cf.get("ShuQi", 'capacity'))
+        img_bc = cv2.resize(img_capacity, (capacity_setting_width, capacity_height))
+        img[bc_top_left[1]:bc_top_left[1] + capacity_height, bc_top_left[0]:bc_top_left[0] + capacity_setting_width] = img_bc
+        img_capacity_head = cv2.imread(self.cf.get("ShuQi", "capacity_head"))
+        capacity_head_x = bc_top_left[0] + capacity_setting_width
+        capacity_head_width = self.cf.getint("ShuQi", "capacity_head_width")
+        img[bc_top_left[1]:bc_top_left[1] + capacity_height, capacity_head_x:capacity_head_x + capacity_head_width] = img_capacity_head
+
+        # Set time
+        IMG_NUM_WIDTH = self.cf.getint('ShuQi', 'num_width')
+        IMG_NUM_HEIGHT = self.cf.getint('ShuQi', 'num_height')
+        IMG_COLON_WIDTH = self.cf.getint('ShuQi', 'colon_width')
+        NUM_TOP_LEFT_WIDTH = self.cf.getint('ShuQi', 'num_top_left_x')
+        NUM_TOP_LEFT_HEIGHT = self.cf.getint('ShuQi', 'num_top_left_y')
+
+        h = NUM_TOP_LEFT_HEIGHT
+        h1 = NUM_TOP_LEFT_HEIGHT + IMG_NUM_HEIGHT
+        w = NUM_TOP_LEFT_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get("ShuQi", time[0]))
+        w = NUM_TOP_LEFT_WIDTH + IMG_NUM_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get("ShuQi", time[1]))
+        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get("ShuQi", 'colon'))
+        w = NUM_TOP_LEFT_WIDTH + 2 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get("ShuQi", time[3]))
+        w = NUM_TOP_LEFT_WIDTH + 3 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        w1 = NUM_TOP_LEFT_WIDTH + 4 * IMG_NUM_WIDTH + IMG_COLON_WIDTH
+        img[h:h1, w:w1] = cv2.imread(self.cf.get("ShuQi", time[4]))
+
+        return True, img
+
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
-        self.driver.find_element_by_name(u"免费").click()
+        el = self.driver.find_element_by_name(u"免费").click()
         self.driver.implicitly_wait(10)
+        sleep(10)
+        x_rand = random.randint(0, self.cf.getint("ShuQi", "x_num"))
+        y_rand = random.randint(0, self.cf.getint("ShuQi", "y_num"))
+        x_pos = self.cf.getint("ShuQi", "book_x") + x_rand * self.cf.getint("ShuQi", "book_right_dist")
+        y_pos = self.cf.getint("ShuQi", "book_y") + y_rand * self.cf.getint("ShuQi", "book_bottom_dist")
+
+        action = TouchAction(self.driver)
+        action.tap(el, x_pos, y_pos).perform()
+        sleep(5)
+
+        try:
+            self.driver.find_element_by_name(u"开始阅读").click()
+        except:
+            self.driver.find_element_by_name(u"继续阅读").click()
+        sleep(3)
+
+        page_rand = random.randint(1, self.cf.getint("ShuQi", "page_num"))
+        for _ in range(page_rand):
+            action.tap(el, self.cf.getint("ShuQi", "page_x"), self.cf.getint("ShuQi", "page_y")).perform()
+            sleep(0.5)
+
         self.driver.get_screenshot_as_file('screenshot.png')
+
+        ad = self.warterMark(self.img_paste_ad, self.cf.get("ShuQi", "ad_corner"))
+        insert_width = self.cf.getint("ShuQi", "insert_width")
+        insert_height = self.cf.getint("ShuQi", "insert_height")
+        ad = cv2.resize(ad, (insert_width, insert_height))
+        ad_x = (self.screen_width - insert_width) / 2
+        ad_y = (self.screen_height - insert_height) / 2
+        img_color = cv2.imread("screenshot.png")
+        img_color[ad_y:ad_y + insert_height, ad_x:ad_x+insert_width] = ad
+
+        ok, img_bottom = self.bottom(self.time, self.battery)
+        if ok:
+            img_color[self.screen_height - self.cf.getint("ShuQi", "bottom_height"):self.screen_height,
+                0:self.cf.getint("ShuQi", "bottom_width"),] = img_bottom
+
+        cv2.imwrite(self.composite_ads_path, img_color)
         self.driver.quit()
 
 if __name__ == '__main__':
@@ -1038,8 +1125,8 @@ if __name__ == '__main__':
         #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
-        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_kai.jpg', 'ad_area/corner-ad.png', 'kai', '4G')
-        #autoImg = ShuQiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_kai.jpg', 'ad_area/corner-ad.png', 'kai', '4G')
+        autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')

@@ -928,8 +928,15 @@ class QQBrowserAutoImg(AutoImg):
         flag_width = self.cf.getint('QQBrowser', 'flag_width')
         flag_height = self.cf.getint('QQBrowser', 'flag_height')
         ad_x = (self.screen_width - ad_width) / 2
-
+        word_height = self.cf.getint('QQBrowser', 'word_height')
         blank = cv2.imread(self.cf.get('image_path', 'browser_blank'))
+
+        doc_1stline_max_len = self.set1stDocLen(self.doc, 'QQBrowser')
+        # set ad backgroud
+        if len(self.doc) > doc_1stline_max_len:
+            blank_height = blank_height + word_height
+            flag_y = flag_y + word_height
+            self.ad_desc_pos = (self.ad_desc_pos[0], self.ad_desc_pos[1] + word_height)
         bkg = cv2.resize(blank, (self.screen_width, blank_height))
         ad = cv2.imread(self.img_paste_ad)
 
@@ -938,20 +945,28 @@ class QQBrowserAutoImg(AutoImg):
 
         bkg[blank_height - 1:blank_height, 0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'browser_split'))
         bkg[flag_y:flag_y+flag_height, flag_x:flag_x+flag_width] = cv2.imread(self.cf.get('image_path', 'browser_ad'))
-        cv2.imwrite('browser.png', bkg)
+        cv2.imwrite('tmp_img/browser.png', bkg)
 
         # Print doc and desc in the bkg
-        im = Image.open('browser.png')
+        im = Image.open('tmp_img/browser.png')
         draw = ImageDraw.Draw(im)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
-            draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)  # desc could not be ''
-        if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
-            draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
-        im.save('browser.png')
+            ttfont = ImageFont.truetype("font/SIMSUN.TTC", self.cf.getint('QQBrowser', 'doc_size'))
 
-        return cv2.imread('browser.png')
+            if len(self.doc) <= doc_1stline_max_len:  # 15 utf-8 character in one line should be OK usually
+                draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)
+            else:
+                ad_doc_pos1 = (self.ad_doc_pos[0], self.ad_doc_pos[1] + word_height)
+                draw.text(self.ad_doc_pos, self.doc[:doc_1stline_max_len], fill=self.ad_doc_color,
+                          font=ttfont)
+                draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=self.ad_doc_color,
+                          font=ttfont)
+        if '' != self.desc:
+            ttfont_ = ImageFont.truetype("font/SIMSUN.TTC", self.cf.getint('QQBrowser', 'desc_size'))
+            draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
+        im.save('tmp_img/browser.png')
+
+        return cv2.imread('tmp_img/browser.png')
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -977,6 +992,8 @@ class QQBrowserAutoImg(AutoImg):
         img = cv2.imread('screenshot.png')
         bottom_y = self.cf.getint('QQBrowser', 'bottom_y')
         blank_height = self.cf.getint('QQBrowser', 'blank_height')
+        if len(self.doc) > self.set1stDocLen(self.doc, 'QQBrowser'):
+            blank_height = blank_height + self.cf.getint('QQBrowser', 'word_height')
         ad_bottom_height = bottom_y - bottom_right[1] - blank_height
         img[bottom_y-ad_bottom_height: bottom_y,0:self.screen_width] = \
             img[bottom_right[1]:bottom_right[1]+ad_bottom_height, 0:self.screen_width]
@@ -1280,7 +1297,7 @@ class IOSAutoImg(AutoImg):
             'platformName': 'ios',
             'deviceName': 'iPhone 6',
             'platformVersion': '8.1.2',
-            'bundleId': 'com.tencent.xin',
+            'bundleId': 'com.tencent.xin.debug',
             'udid': '19f479838e81afc27c8f5c526a87676631d36d14',
         }
 
@@ -1302,12 +1319,12 @@ if __name__ == '__main__':
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-        #                           u'吉利新帝豪', u'新帝豪八周年钜惠14000元！')
+        autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+                                   u'吉利新帝豪', u'听说只有敢于设计自己的')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
-        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
-                              u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,
-                               'ok.png', 'ads/logo.jpg', )
+        #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
+        #                      u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,
+        #                       'ok.png', 'ads/logo.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         autoImg.compositeImage()

@@ -57,6 +57,7 @@ def ptu():
         city = row['city']
         savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
         wa = ''
+        adCornerImg = ''
 
         suffix = os.path.splitext(row['adImg'])[1]
         adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
@@ -84,11 +85,9 @@ def ptu():
             ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
                                    title, doc, doc1stLine, savepath)
         elif 'QQBrowser' == app:
-            adCornerImg = ''
             ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
-        else:
-            adCornerImg = ''
+        elif 'QQDongtai' == app:
             ai = None
             parameters = {'id': tId, 'status': 1}
             requests.get(urlUpdate, headers=headers, params=parameters)
@@ -96,6 +95,22 @@ def ptu():
                 myEmail.send_email(email, '现在不支持"QQ动态"截图'.decode('utf-8'))
             logger.info("Do not support QQ dongtai now!!!")
             continue
+        elif 'qiushi' == app:
+            ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath)
+        elif 'shuqi' == app:
+            ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                     title, doc, doc1stLine, savepath)
+        else:
+            ai = None
+            parameters = {'id': tId, 'status': 1}
+            requests.get(urlUpdate, headers=headers, params=parameters)
+            if email:
+                myEmail.send_email(email, '现在不支持此种截图'.decode('utf-8'))
+            mStr = "Do not support %s now!!!" % (app)
+            logger.info(mStr)
+            continue
+
         ok, mType, msg = ai.compositeImage()
         if ok:
             logger.debug("composite image OK!!!")

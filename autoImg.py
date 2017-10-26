@@ -374,6 +374,7 @@ class WebChatAutoImg(AutoImg):
                 try:
                     self.driver.swipe(start_width, start_height, end_width, end_height)
                     self.driver.implicitly_wait(10)
+                    sleep(0.5)
                 except:
                     sleep(1)
                     pass
@@ -389,7 +390,8 @@ class WebChatAutoImg(AutoImg):
                     break
             except Exception as e:
                 logger.error('expect:' + repr(e))
-
+        sleep(2)
+        self.driver.get_screenshot_as_file("screenshot.png")
         return type, (top_left[0], bottom_right[1]), (bottom_right1[0], top_left1[1])
 
     def findAdArea_(self, start_width, start_height, end_width, end_height):
@@ -402,6 +404,7 @@ class WebChatAutoImg(AutoImg):
                 try:
                     self.driver.swipe(start_width, start_height, end_width, end_height)
                     self.driver.implicitly_wait(10)
+                    sleep(0.5)
                 except:
                     sleep(1)
                     pass
@@ -417,7 +420,7 @@ class WebChatAutoImg(AutoImg):
             except Exception as e:
                 logger.error('expect:' + repr(e))
         if self.NONE == type: # There is no good_message and write_message
-            crop, top_left1, bottom_right1 = self.findMatched(img, self.img_bottom)
+            top_left1, bottom_right1 =(0, self.screen_height), (self.screen_width, self.screen_height)
 
         return type, (top_left[0], bottom_right[1]), (bottom_right1[0], top_left1[1])
 
@@ -513,7 +516,7 @@ class WebChatAutoImg(AutoImg):
         cnt = 0;
         while 1:
             cnt = cnt + 1
-            assert cnt != 15, "Do not find webaccount %s" %(target)
+            assert cnt != 50, "Do not find webaccount %s" %(target)
             try:
                 if 1 != cnt:
                     self.driver.swipe(self.screen_width / 2, self.screen_height * 2 / 3, self.screen_width / 2,
@@ -777,7 +780,13 @@ class QQAutoImg(AutoImg):
         ad_bk_radius = self.cf.getint('QQFeeds', 'ad_bk_radius')
         recom_width = self.cf.getint('QQFeeds', 'recom_width')
         reocm_height = self.cf.getint('QQFeeds', 'recom_height')
+        word_height = self.cf.getint('QQFeeds', 'word_height')
 
+        doc_1stline_max_len = self.set1stDocLen(self.doc, 'QQFeeds')
+        # set ad backgroud
+        if len(self.doc) > doc_1stline_max_len:
+            blank_height = blank_height + word_height
+            ad_bk_y = ad_bk_y + word_height
         blank = cv2.imread(self.cf.get('image_path', 'feeds_blank'))
         bkg = cv2.resize(blank, (self.screen_width, blank_height))
         # Add logo
@@ -812,15 +821,23 @@ class QQAutoImg(AutoImg):
         im = Image.open('tmp_img/tmp.png')
         draw = ImageDraw.Draw(im)
         if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'desc_size'))
+            ttfont_ = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.cf.getint('QQFeeds', 'desc_size'))
             ad_desc_pos = (self.cf.getint('QQFeeds', 'desc_x'), self.cf.getint('QQFeeds', 'desc_y'))
             ad_desc_color = self.cf.getint('QQFeeds', 'desc_color')
             draw.text(ad_desc_pos, self.desc, fill=(ad_desc_color, ad_desc_color, ad_desc_color), font=ttfont_)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQFeeds', 'doc_size'))
-            ad_doc_pos = (self.cf.getint('QQFeeds', 'doc_x'), self.cf.getint('QQFeeds', 'doc_y'))
+            ttfont = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.cf.getint('QQFeeds', 'doc_size'))
             ad_doc_color = self.cf.getint('QQFeeds', 'doc_color')
-            draw.text(ad_doc_pos, self.doc, fill=(ad_doc_color, ad_doc_color, ad_doc_color), font=ttfont)
+            ad_doc_pos = (self.cf.getint('QQFeeds', 'doc_x'), self.cf.getint('QQFeeds', 'doc_y'))
+
+            if len(self.doc) <= doc_1stline_max_len:
+                draw.text(ad_doc_pos, self.doc, fill=(ad_doc_color, ad_doc_color, ad_doc_color), font=ttfont)
+            else:
+                ad_doc_pos1 = (self.cf.getint('QQFeeds', 'doc_x'), self.cf.getint('QQFeeds', 'doc_y') + word_height)
+                draw.text(ad_doc_pos, self.doc[:doc_1stline_max_len], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
+                          font=ttfont)
+                draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
+                          font=ttfont)
         im.save('tmp_img/tmp.png')
 
         return cv2.imread('tmp_img/tmp.png')
@@ -840,6 +857,8 @@ class QQAutoImg(AutoImg):
 
         bottom_y = self.cf.getint('screen', 'height')
         blank_height = self.cf.getint('QQFeeds', 'blank_height')
+        if len(self.doc) > self.set1stDocLen(self.doc, 'QQFeeds'):
+            blank_height = blank_height + self.cf.getint('QQFeeds', 'word_height')
         ad_bottom_height = bottom_y - bottom_right[1] - blank_height
         img[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
             img[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
@@ -901,6 +920,7 @@ class QQBrowserAutoImg(AutoImg):
             try:
                 self.driver.swipe(start_width, start_height, end_width, end_height)
                 self.driver.implicitly_wait(10)
+                sleep(0.5)
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
@@ -951,9 +971,9 @@ class QQBrowserAutoImg(AutoImg):
         im = Image.open('tmp_img/browser.png')
         draw = ImageDraw.Draw(im)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/SIMSUN.TTC", self.cf.getint('QQBrowser', 'doc_size'))
+            ttfont = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QQBrowser', 'doc_size'))
 
-            if len(self.doc) <= doc_1stline_max_len:  # 15 utf-8 character in one line should be OK usually
+            if len(self.doc) <= doc_1stline_max_len:
                 draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)
             else:
                 ad_doc_pos1 = (self.ad_doc_pos[0], self.ad_doc_pos[1] + word_height)
@@ -962,7 +982,7 @@ class QQBrowserAutoImg(AutoImg):
                 draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=self.ad_doc_color,
                           font=ttfont)
         if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/SIMSUN.TTC", self.cf.getint('QQBrowser', 'desc_size'))
+            ttfont_ = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QQBrowser', 'desc_size'))
             draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
         im.save('tmp_img/browser.png')
 
@@ -1109,21 +1129,21 @@ class QSBKAutoImg(AutoImg):
         im = Image.open('tmp_img/tmp.png')
         draw = ImageDraw.Draw(im)
         if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QSBK', 'desc_size'))
+            ttfont_ = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QSBK', 'desc_size'))
             ad_desc_pos = (self.cf.getint('QSBK', 'desc_x'), self.cf.getint('QSBK', 'desc_y'))
             ad_desc_color = self.cf.getint('QSBK', 'desc_color')
             draw.text(ad_desc_pos, self.desc, fill=(ad_desc_color, ad_desc_color, ad_desc_color), font=ttfont_)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QSBK', 'doc_size'))
+            ttfont = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QSBK', 'doc_size'))
             ad_doc_pos = (self.cf.getint('QSBK', 'doc_x'), self.cf.getint('QSBK', 'doc_y'))
             ad_doc_color = self.cf.getint('QSBK', 'doc_color')
             if len(self.doc) <= doc_1stline_max_len:  # 15 utf-8 character in one line should be OK usually
-                draw.text(ad_doc_pos, self.doc, fill=ad_doc_color, font=ttfont)
+                draw.text(ad_doc_pos, self.doc, fill=(ad_doc_color, ad_doc_color, ad_doc_color), font=ttfont)
             else:
                 ad_doc_pos1 = (ad_doc_pos[0], ad_doc_pos[1] + word_height)
-                draw.text(ad_doc_pos, self.doc[:doc_1stline_max_len], fill=ad_doc_color,
+                draw.text(ad_doc_pos, self.doc[:doc_1stline_max_len], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
                           font=ttfont)
-                draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=ad_doc_color,
+                draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
                           font=ttfont)
 
         im.save('tmp_img/tmp.png')
@@ -1167,6 +1187,11 @@ class QSBKAutoImg(AutoImg):
         img[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
             img[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
         img[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
+
+        # Add header image
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img[0:self.ad_header_height, 0:self.ad_header_width] = img_header
 
         cv2.imwrite(self.composite_ads_path, img)
         self.driver.quit()
@@ -1270,7 +1295,11 @@ class ShuQiAutoImg(AutoImg):
 
         self.driver.get_screenshot_as_file('screenshot.png')
 
-        ad = self.warterMark(self.img_paste_ad, self.cf.get("ShuQi", "ad_corner"))
+        ad_corner = cv2.imread(self.cf.get("ShuQi", "ad_corner"), cv2.IMREAD_UNCHANGED)
+        ad_corner = cv2.resize(ad_corner, (self.cf.getint('ShuQi', 'ad_corner_width'),
+                                           self.cf.getint('ShuQi', 'ad_corner_height')))
+        cv2.imwrite('tmp_img/sq_ad_corner.png', ad_corner)
+        ad = self.warterMark(self.img_paste_ad, 'tmp_img/sq_ad_corner.png')
         insert_width = self.cf.getint("ShuQi", "insert_width")
         insert_height = self.cf.getint("ShuQi", "insert_height")
         ad = cv2.resize(ad, (insert_width, insert_height))
@@ -1308,25 +1337,53 @@ class IOSAutoImg(AutoImg):
         print 'Have started ios app!!!'
         self.driver.quit()
 
+class AiqiyiAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.3',
+            'deviceName': 'T1',
+            'appPackage': 'com.qiyi.video',
+            'appActivity': '.WelcomeActivity',
+            'udid': '0123456789ABCDEF',
+        }
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(30)
+        sleep(3)
+        self.driver.find_element_by_name(u'电视剧').click()
+        self.driver.implicitly_wait(10)
+        sleep(3)
+
+        print 'Have started aiqiyi app!!!'
+        self.driver.quit()
+
+
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'每日金融', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
-        #                         'wifi', title, doc)
+        autoImg = WebChatAutoImg('16:20', 1, u'半岛晨报', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+                                 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-        #                    'wifi', u'吉利新帝豪', u'新帝豪八周年钜惠14000元！', logo='ads/114x114-1.jpg')
+        #                    'wifi', u'吉利新帝豪', u'在上海，120m从毛坯到装修需要多少钱，我来告诉你！', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-                                   u'吉利新帝豪', u'听说只有敢于设计自己的')
+        #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #                           u'吉利新帝豪', u'听说只有敢于设计自己人生的人，才能看到这封邀请函')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
         #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
         #                      u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,
         #                       'ok.png', 'ads/logo.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')

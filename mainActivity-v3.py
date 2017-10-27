@@ -14,11 +14,19 @@ import requests
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
 dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '汽车维修与保养', '汽车点评', '汽车知识攻略',
-                         '汽车大师', '汽车头条', '汽车情报'],
+                         '汽车大师', '汽车头条', '汽车情报', '金鸽传媒', '优车生活', '摩托车杂志', '车闻速递', '30秒懂车',
+                         '汽车天天资讯', '汽车公社', '砖说车', '车之家', '爱车一族', '车乐汽车技术交流', 'AC汽车后市场',
+                         '街拍车模', '各地车友惠', '跑车世界', '开车小技巧', '深夜一人夜听', '爱车一派', '选车听我的',
+                         '原创汽车改装吧', '斗车', '轿车情报'],
                   'finance':['金融投资报', '每日金融', '贸易金融'],
-                  'house':['中国房地产报', '中国房地产'],
+                  'house':['中国房地产报', '中国房地产', '新鲜居室', '霸都楼市', '装修家居风水', '家居布局大师',
+                           '美式装修风格', '家居装修攻略', '房地产经纪', '商业地产V评论', '新中式装修风格设计', '私家园林',
+                           '房闻天下', '室内装修样板间'],
                   'travel':['旅行家杂志', '最旅行', '户外探险outdoor'],
-                  'information':['第一财经资讯', '新闻晨报', '新闻早餐', '新闻夜航'],
+                  'information':['第一财经资讯', '新闻晨报', '新闻早餐', '新闻夜航', '冯站长之家', '占豪', '环球时报',
+                                 '观察者网', '都市快报', '半岛晨报', '广告也震惊', '中国企业家杂志', '今启网', '鼎盛网',
+                                 '热点阅览', '热门大参考', '头条新闻', '早间新|闻', '今日快消息', '羊城晚报', '智汇栏目',
+                                 '时代春秋', '珍贵老照片'],
                   'game':['游戏日报']}
 urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
 urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
@@ -63,6 +71,14 @@ def ptu():
         adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
         urllib.urlretrieve(row['adImg'], adImg)
 
+        if '' != row['logo']:
+            try:
+                suffix = os.path.splitext(row['logo'])[1]
+                logo = 'webAutoImg/media/upload/' + today + '-logo-' + str(tId) + suffix
+                urllib.urlretrieve(row['logo'], logo)
+            except:
+                pass
+
         if 'weixin' == app:
             if 0 == row['adCornerType']:  # 活动推广
                 adCornerImg = 'ad_area/corner-mark.png'
@@ -88,22 +104,25 @@ def ptu():
             ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
         elif 'QQDongtai' == app:
-            ai = None
-            parameters = {'id': tId, 'status': 1}
-            requests.get(urlUpdate, headers=headers, params=parameters)
-            if email:
-                myEmail.send_email(email, '现在不支持"QQ动态"截图'.decode('utf-8'))
-            logger.info("Do not support QQ dongtai now!!!")
-            continue
+            #ai = None
+            #parameters = {'id': tId, 'status': 1}
+            #requests.get(urlUpdate, headers=headers, params=parameters)
+            #if email:
+            #    myEmail.send_email(email, '截图失败'.decode('utf-8'))
+            #logger.info("Do not support QQ dongtai now!!!")
+            #continue
+
+            ai = autoImg.QQAutoImg('feeds', '', mtime, battery, adImg, adCornerImg, adType, network, title,
+                                   doc, doc1stLine, savepath, logo)
         elif 'qiushi' == app:
             ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath)
+                                          title, doc, doc1stLine, savepath, logo)
         elif 'shuqi' == app:
             ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
         else:
             ai = None
-            parameters = {'id': tId, 'status': 1}
+            parameters = {'id': tId, 'status': 2}
             requests.get(urlUpdate, headers=headers, params=parameters)
             if email:
                 myEmail.send_email(email, '现在不支持此种截图'.decode('utf-8'))
@@ -131,7 +150,7 @@ def ptu():
             myEmail.send_email('wangqiang@optaim.com', content)
             logger.warn("Failed to composite image:" + content)
             if autoImg.AutoImg.TYPE_ARG == mType:
-                parameters = {'id': tId, 'status': 1}
+                parameters = {'id': tId, 'status': 2}
                 requests.get(urlUpdate, headers=headers, params=parameters)
                 if email:
                     myEmail.send_email(email, msg)
@@ -145,4 +164,4 @@ if __name__ == '__main__':
             logger.error(traceback.format_exc())
             #If wifi is not connected, send_email will fail and this process will fail too, so do not send_email in Exception.
             #myEmail.send_email('wangqiang@optaim.com', 'mainActivity.py process failed!!!<br>' + traceback.format_exc())
-            time.sleep(60)
+            time.sleep(30)

@@ -71,6 +71,7 @@ def ptu():
         adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
         urllib.urlretrieve(row['adImg'], adImg)
 
+        logo = ""
         if '' != row['logo']:
             try:
                 suffix = os.path.splitext(row['logo'])[1]

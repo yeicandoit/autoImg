@@ -341,6 +341,7 @@ class WebChatAutoImg(AutoImg):
         # All types of ad have the same distance between ad area and good_message/write_message
         self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
         self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
+        self.DISTANCE_BOTTOM = self.cf.getint('screen', 'distance_bottom')
 
     def findAdAreaTop(self, img):
         """ Find the ad position """
@@ -390,7 +391,8 @@ class WebChatAutoImg(AutoImg):
                     break
             except Exception as e:
                 logger.error('expect:' + repr(e))
-        sleep(2)
+        #In case there is video, so wait video to be loaded
+        sleep(5)
         self.driver.get_screenshot_as_file("screenshot.png")
         return type, (top_left[0], bottom_right[1]), (bottom_right1[0], top_left1[1])
 
@@ -422,6 +424,9 @@ class WebChatAutoImg(AutoImg):
         if self.NONE == type: # There is no good_message and write_message
             top_left1, bottom_right1 =(0, self.screen_height), (self.screen_width, self.screen_height)
 
+        # In case there is video, so wait video to be loaded
+        sleep(5)
+        self.driver.get_screenshot_as_file("screenshot.png")
         return type, (top_left[0], bottom_right[1]), (bottom_right1[0], top_left1[1])
 
     def findAdAbove(self, height, start_width, start_height, end_width, end_height):
@@ -565,8 +570,10 @@ class WebChatAutoImg(AutoImg):
             wanted_height += self.DISTANCE_GOOD_MESSAGE
         elif ad_bottom_type == self.WRITE_MESSAGE:
             wanted_height += self.DISTANCE_WRITE_MESSAGE
+        elif self.NONE == ad_bottom_type:
+            wanted_height += self.DISTANCE_BOTTOM
 
-        # ad aread is bigger than wanted, should shrink
+        # ad area is bigger than wanted, should shrink
         if area_height - wanted_height > 3:
             logger.debug("Should shrink ad area")
             #  Calculate ad area
@@ -1373,7 +1380,7 @@ if __name__ == '__main__':
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-        #                    'wifi', u'吉利新帝豪', u'在上海，120m从毛坯到装修需要多少钱，我来告诉你！', logo='ads/114x114-1.jpg')
+        #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'听说只有敢于设计自己人生的人，才能看到这封邀请函')

@@ -125,11 +125,11 @@ class AutoImg:
         bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
 
         # Set battery
-        y = self.cf.getint('battery', 'top_left_y')
-        y1 = self.cf.getint('battery', 'bottom_right_y')
-        x = self.cf.getint('battery', 'top_left_x')
-        x1 = self.cf.getint('battery', 'bottom_right_x')
         if 'conf/H60-L11.conf' == self.conf:
+            y = self.cf.getint('battery', 'top_left_y')
+            y1 = self.cf.getint('battery', 'bottom_right_y')
+            x = self.cf.getint('battery', 'top_left_x')
+            x1 = self.cf.getint('battery', 'bottom_right_x')
             bc_width = bc_bottom_right[0] - bc_top_left[0]
             bc_height = bc_bottom_right[1] - bc_top_left[1]
             bc_setting_width = int(bc_width * battery)
@@ -138,16 +138,16 @@ class AutoImg:
             img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
             img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
             img[y:y1, x:x1] = img_battery
-        elif 'conf/HTC-D316d.conf' == self.conf:
-            img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
-            img_capacity = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
-            b_width = x1 -x
-            bc_height = self.cf.getint('battery', 'capacity_height')
-            b_height = y1 - y
-            bc_setting_height = int(bc_height*battery)
-            img_capacity = cv2.resize(img_capacity, (b_width, bc_setting_height))
-            img_battery[b_height-bc_setting_height:b_height, 0:b_width] = img_capacity
-            img[y:y1, x:x1] = img_battery
+        #elif 'conf/HTC-D316d.conf' == self.conf:
+        #    img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
+        #    img_capacity = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
+        #    b_width = x1 -x
+        #    bc_height = self.cf.getint('battery', 'capacity_height')
+        #    b_height = y1 - y
+        #    bc_setting_height = int(bc_height*battery)
+        #    img_capacity = cv2.resize(img_capacity, (b_width, bc_setting_height))
+        #    img_battery[b_height-bc_setting_height:b_height, 0:b_width] = img_capacity
+        #    img[y:y1, x:x1] = img_battery
 
         # Set time
         IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
@@ -887,7 +887,7 @@ class QQAutoImg(AutoImg):
 
 class QQBrowserAutoImg(AutoImg):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/HTC-D316d.conf'):
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/Honor8.conf'):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path, conf)
 
@@ -907,11 +907,11 @@ class QQBrowserAutoImg(AutoImg):
 
         self.desired_caps = {
             'platformName': 'Android',
-            'platformVersion': '4.3',
-            'deviceName': 'HTC D316d',
+            'platformVersion': '7.0',
+            'deviceName': 'Honor8',
             'appPackage': 'com.tencent.mtt',
             'appActivity': '.MainActivity',
-            'udid': '0123456789ABCDEF',
+            'udid': 'WTK7N16923009805',
         }
     def findAdArea(self, start_width, start_height, end_width, end_height):
         """ We assume that ad area is less than half screen, then we have following logic.
@@ -937,7 +937,8 @@ class QQBrowserAutoImg(AutoImg):
                     if has_ad_flag:
                         continue
                     #TODO When doc line is 2, ad area height will be bigger than blank_height, should consider this
-                    if self.cf.getint('QQBrowser', 'bottom_y') - top_left[1] < self.cf.getint('QQBrowser', 'blank_height') + 3:
+                    if self.cf.getint('QQBrowser', 'bottom_y') - top_left[1] < self.cf.getint('QQBrowser', 'blank_height') \
+                            + self.cf.getint('QQBrowser', 'word_height'):
                         continue
                     break
             except Exception as e:
@@ -950,19 +951,16 @@ class QQBrowserAutoImg(AutoImg):
         ad_width = self.cf.getint('QQBrowser', 'ad_width')
         ad_height = self.cf.getint('QQBrowser', 'ad_height')
         split_ad_dis = self.cf.getint('QQBrowser', 'split_ad_dis')
-        flag_x = self.cf.getint('QQBrowser', 'flag_x')
-        flag_y = self.cf.getint('QQBrowser', 'flag_y')
-        flag_width = self.cf.getint('QQBrowser', 'flag_width')
-        flag_height = self.cf.getint('QQBrowser', 'flag_height')
         ad_x = (self.screen_width - ad_width) / 2
         word_height = self.cf.getint('QQBrowser', 'word_height')
+        ad_area_bottom_height = self.cf.getint('QQBrowser', 'ad_area_bottom_height')
         blank = cv2.imread(self.cf.get('image_path', 'browser_blank'))
 
         doc_1stline_max_len = self.set1stDocLen(self.doc, 'QQBrowser')
         # set ad backgroud
         if len(self.doc) > doc_1stline_max_len:
             blank_height = blank_height + word_height
-            flag_y = flag_y + word_height
+            split_ad_dis += word_height
             self.ad_desc_pos = (self.ad_desc_pos[0], self.ad_desc_pos[1] + word_height)
         bkg = cv2.resize(blank, (self.screen_width, blank_height))
         ad = cv2.imread(self.img_paste_ad)
@@ -970,16 +968,15 @@ class QQBrowserAutoImg(AutoImg):
         paste_ad = cv2.resize(ad, (ad_width, ad_height))
         bkg[split_ad_dis:split_ad_dis+ad_height, ad_x:ad_x+ad_width] = paste_ad
 
-        bkg[blank_height - 1:blank_height, 0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'browser_split'))
-        bkg[flag_y:flag_y+flag_height, flag_x:flag_x+flag_width] = cv2.imread(self.cf.get('image_path', 'browser_ad'))
+        bkg[blank_height - ad_area_bottom_height:blank_height, 0:self.screen_width] = \
+            cv2.imread(self.cf.get('image_path', 'ad_area_bottom'))
         cv2.imwrite('tmp_img/browser.png', bkg)
 
         # Print doc and desc in the bkg
         im = Image.open('tmp_img/browser.png')
         draw = ImageDraw.Draw(im)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QQBrowser', 'doc_size'))
-
+            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
             if len(self.doc) <= doc_1stline_max_len:
                 draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)
             else:
@@ -989,11 +986,29 @@ class QQBrowserAutoImg(AutoImg):
                 draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=self.ad_doc_color,
                           font=ttfont)
         if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/UbuntuDroidFull.ttf", self.cf.getint('QQBrowser', 'desc_size'))
+            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
             draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
         im.save('tmp_img/browser.png')
 
         return cv2.imread('tmp_img/browser.png')
+
+    def setBattery(self, img, battery):
+        if battery > self.cf.getfloat('battery', 'capacity_max') or battery < self.cf.getfloat('battery', 'capacity_min'):
+            return  False, None
+
+        bc_bottom_right = (
+        self.cf.getint('battery', 'capacity_bottom_right_x'), self.cf.getint('battery', 'capacity_bottom_right_y'))
+        bc_top_left = (
+        self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
+
+        bc_width = bc_bottom_right[0] - bc_top_left[0]
+        bc_height = bc_bottom_right[1] - bc_top_left[1]
+        bc_setting_width = int(bc_width * battery)
+        img_bc = cv2.imread(self.cf.get("image_path", 'battery_capacity'))
+        img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
+        img[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
+
+        return img
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -1029,6 +1044,8 @@ class QQBrowserAutoImg(AutoImg):
         ok, img_header = self.header(self.time, self.battery, self.network)
         if ok:
             img[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+
+        img = self.setBattery(img, self.battery)
         #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
         cv2.imwrite(self.composite_ads_path, img)
         self.driver.quit()
@@ -1344,46 +1361,19 @@ class IOSAutoImg(AutoImg):
         print 'Have started ios app!!!'
         self.driver.quit()
 
-class AiqiyiAutoImg(AutoImg):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
-        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path)
-
-        self.desired_caps = {
-            'platformName': 'Android',
-            'platformVersion': '4.3',
-            'deviceName': 'T1',
-            'appPackage': 'com.qiyi.video',
-            'appActivity': '.WelcomeActivity',
-            'udid': '0123456789ABCDEF',
-        }
-
-    def start(self):
-        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
-        self.driver.implicitly_wait(30)
-        sleep(3)
-        self.driver.find_element_by_name(u'电视剧').click()
-        self.driver.implicitly_wait(10)
-        sleep(3)
-
-        print 'Have started aiqiyi app!!!'
-        self.driver.quit()
-
-
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'半岛晨报', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+        autoImg = WebChatAutoImg('16:20', 1, u'中国房地产', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = QQBrowserAutoImg('16:20', 0.5, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-        #                           u'吉利新帝豪', u'听说只有敢于设计自己人生的人，才能看到这封邀请函')
+        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
         #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
         #                      u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,

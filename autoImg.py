@@ -370,7 +370,7 @@ class WebChatAutoImg(AutoImg):
         cnt = 0
         while 1:
             cnt = cnt + 1
-            assert cnt != 300, "Do not find webcat ad area"
+            assert cnt != 150, "Do not find webcat ad area"
             try:
                 try:
                     self.driver.swipe(start_width, start_height, end_width, end_height)
@@ -917,7 +917,7 @@ class QQBrowserAutoImg(AutoImg):
         """ We assume that ad area is less than half screen, then we have following logic.
             QQBrowser will not push ad when accessed too much!!! so insert one ad between news area.
         """
-        for _ in (0,random.randint(2, 20)):
+        for _ in (0,random.randint(2, 6)):
             self.driver.swipe(start_width, start_height, end_width, end_height)
             self.driver.implicitly_wait(10)
         cnt = 0
@@ -927,7 +927,8 @@ class QQBrowserAutoImg(AutoImg):
             try:
                 self.driver.swipe(start_width, start_height, end_width, end_height)
                 self.driver.implicitly_wait(10)
-                sleep(0.5)
+                #Wait pic or video to be loaded
+                sleep(3)
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
@@ -976,7 +977,7 @@ class QQBrowserAutoImg(AutoImg):
         im = Image.open('tmp_img/browser.png')
         draw = ImageDraw.Draw(im)
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'doc_size'))
+            ttfont = ImageFont.truetype("font/HYQiHei-50S.otf", self.cf.getint('QQBrowser', 'doc_size'))
             if len(self.doc) <= doc_1stline_max_len:
                 draw.text(self.ad_doc_pos, self.doc, fill=self.ad_doc_color, font=ttfont)
             else:
@@ -986,7 +987,7 @@ class QQBrowserAutoImg(AutoImg):
                 draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=self.ad_doc_color,
                           font=ttfont)
         if '' != self.desc:
-            ttfont_ = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('QQBrowser', 'desc_size'))
+            ttfont_ = ImageFont.truetype("font/fzlth.TTF", self.cf.getint('QQBrowser', 'desc_size'))
             draw.text(self.ad_desc_pos, self.desc, fill=self.ad_desc_color, font=ttfont_)
         im.save('tmp_img/browser.png')
 
@@ -1365,15 +1366,15 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'中国房地产', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
-                                 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'中国房地产', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+        #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-        #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本')
+        autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+                                   u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
         #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
         #                      u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,

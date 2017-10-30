@@ -10,6 +10,7 @@ import logging
 import urllib
 import hashlib
 import requests
+import util
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
@@ -159,6 +160,7 @@ def ptu():
 if __name__ == '__main__':
     while 1:
         try:
+            util.Honor8Awaken.awaken()
             ptu()
             time.sleep(10)
         except Exception as e:

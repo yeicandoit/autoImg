@@ -9,6 +9,7 @@ import traceback
 import ConfigParser
 from appium.webdriver.common.touch_action import TouchAction
 import random
+import util.letterOfCh as lc
 import logging
 import logging.config
 logging.config.fileConfig('conf/log.conf')
@@ -517,7 +518,20 @@ class WebChatAutoImg(AutoImg):
 
         return len(doc)
 
-    def clickTarget(self, target, type='name'):
+    def clickTarget(self, target, el, type='name'):
+        letters = lc.multi_get_letter(target)
+        if True == letters[0].isalpha():
+            A_x = self.cf.getint('WebChat', 'A_x')
+            A_y = self.cf.getint('WebChat', 'A_y')
+            alpha_height = self.cf.getint('WebChat', 'alpha_height')
+            A_int = ord('A')
+            letter_int = ord(letters[0])
+            #convert all alpha to be upper
+            if 97 <= letter_int:
+                letter_int -= 32
+            action = TouchAction(self.driver)
+            action.tap(el, A_x, (letter_int-A_int)*alpha_height+A_y).perform()
+
         cnt = 0;
         while 1:
             cnt = cnt + 1
@@ -527,7 +541,7 @@ class WebChatAutoImg(AutoImg):
                     self.driver.swipe(self.screen_width / 2, self.screen_height * 2 / 3, self.screen_width / 2,
                                       self.screen_height * 1 / 3)
                     self.driver.implicitly_wait(5)
-                return self.driver.find_element_by_name(target).click()
+                self.driver.find_element_by_name(target).click()
                 break
             except:
                 continue
@@ -547,9 +561,9 @@ class WebChatAutoImg(AutoImg):
         self.driver.implicitly_wait(30) #Webcat may start slowly, so set waiting time to be long
         self.driver.find_element_by_name(u"通讯录").click()
         self.driver.implicitly_wait(10)
-        self.driver.find_element_by_name(u"公众号").click()
+        el = self.driver.find_element_by_name(u"公众号").click()
         self.driver.implicitly_wait(10)
-        el = self.clickTarget(self.webcat_account)
+        self.clickTarget(self.webcat_account, el)
         self.driver.implicitly_wait(10)
         action = TouchAction(self.driver)
         random_y = random.randint(self.cf.getint('article_pos', 'y_min'), self.cf.getint('article_pos', 'y_max'))
@@ -749,6 +763,7 @@ class QQAutoImg(AutoImg):
             assert cnt != 10, "Do not find ad area"
             try:
                 self.swipe(start_width, start_height, end_width, end_height)
+                sleep(3)
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
@@ -1366,18 +1381,18 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'中国房地产', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
-        #                         'wifi', title, doc)
+        autoImg = WebChatAutoImg('16:20', 1, u'占豪', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+                                 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-                                   u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
+        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+        #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
         #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
-        #                      u'设计只属于自己的产品！', u'支持自定义外观配置，优惠直降200元！', 15,
+        #                      u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
         #                       'ok.png', 'ads/logo.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')

@@ -333,12 +333,15 @@ class WebChatAutoImg(AutoImg):
         self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
         self.img_top = cv2.imread(self.cf.get('image_path', 'top'), 0)
         self.img_bottom = cv2.imread(self.cf.get('image_path', 'bottom'), 0)
+        self.img_choose_account = cv2.imread(self.cf.get('WebChat', 'img_choose_account'), 0)
         self.img_white_bkg = cv2.imread(self.cf.get('image_path', 'white_bkg'))
         self.fp_ad = str(imagehash.dhash(Image.fromarray(self.img_ad_message)))
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
-        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s" \
-              ,self.fp_ad, self.fp_good_message, self.fp_write_message)
+        self.fp_choose_account = str(imagehash.dhash(Image.fromarray(self.img_choose_account)))
+        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s,"
+                     "img_choose_account fingerprint:%s", self.fp_ad, self.fp_good_message, self.fp_write_message,
+                     self.fp_choose_account)
         # All types of ad have the same distance between ad area and good_message/write_message
         self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
         self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
@@ -529,10 +532,11 @@ class WebChatAutoImg(AutoImg):
             #convert all alpha to be upper
             if 97 <= letter_int:
                 letter_int -= 32
+            sleep(1)
             action = TouchAction(self.driver)
             action.tap(el, A_x, (letter_int-A_int)*alpha_height+A_y).perform()
 
-        cnt = 0;
+        cnt = 0
         while 1:
             cnt = cnt + 1
             assert cnt != 50, "Do not find webaccount %s" %(target)
@@ -556,6 +560,25 @@ class WebChatAutoImg(AutoImg):
                 return False, u"微信banner角标尺寸大于广告尺寸，请确认上传广告大小并重新提交截图请求!"
         return True, None
 
+    def clickAticle(self, el):
+        cnt = 0
+        while 1:
+            cnt = cnt+1
+            assert  cnt != 5, "This account may have no article"
+            try:
+                action = TouchAction(self.driver)
+                random_y = random.randint(self.cf.getint('article_pos', 'y_min'), self.cf.getint('article_pos', 'y_max'))
+                action.tap(el, self.cf.getint('article_pos', 'x'), random_y).perform()
+                sleep(2)
+                self.driver.get_screenshot_as_file('tmp_img/screenshot.png')
+                img = cv2.imread('tmp_img/screenshot.png', 0)
+                ok, _, _ = self.findMatchedArea(img, self.img_choose_account, self.fp_choose_account)
+                # Check whether click the blank area, then will not skip into account content area
+                if False == ok:
+                    break
+            except:
+                pass
+
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(30) #Webcat may start slowly, so set waiting time to be long
@@ -565,11 +588,7 @@ class WebChatAutoImg(AutoImg):
         self.driver.implicitly_wait(10)
         self.clickTarget(self.webcat_account, el)
         self.driver.implicitly_wait(10)
-        action = TouchAction(self.driver)
-        random_y = random.randint(self.cf.getint('article_pos', 'y_min'), self.cf.getint('article_pos', 'y_max'))
-        action.tap(el, self.cf.getint('article_pos', 'x'), random_y).perform()
-        #self.driver.find_element_by_id('com.tencent.mm:id/fl').click()
-        sleep(1)
+        self.clickAticle(el)
 
         ad_bottom_type, left, right = self.findAdArea(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
                         self.screen_height / 4)
@@ -1381,7 +1400,7 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'占豪', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+        autoImg = WebChatAutoImg('16:20', 1, u'商业地产V评论', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)

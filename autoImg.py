@@ -339,9 +339,10 @@ class WebChatAutoImg(AutoImg):
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
         self.fp_choose_account = str(imagehash.dhash(Image.fromarray(self.img_choose_account)))
+        self.fp_top = str(imagehash.dhash(Image.fromarray(self.img_top)))
         logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s,"
-                     "img_choose_account fingerprint:%s", self.fp_ad, self.fp_good_message, self.fp_write_message,
-                     self.fp_choose_account)
+                     "img_choose_account fingerprint:%s, img_top fingerprint:%s", self.fp_ad, self.fp_good_message,
+                     self.fp_write_message, self.fp_choose_account, self.fp_top)
         # All types of ad have the same distance between ad area and good_message/write_message
         self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
         self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
@@ -370,6 +371,11 @@ class WebChatAutoImg(AutoImg):
         return self.NONE, top_left, bottom_right
 
     def findAdArea(self, start_width, start_height, end_width, end_height):
+        self.driver.get_screenshot_as_file('tmp_img/screenshot.png')
+        ok, _, _ = self.findMatchedArea(cv2.imread('tmp_img/screenshot.png', 0), self.img_top,
+                                        self.fp_top)
+        assert ok, 'Should have img_top in account article'
+
         """We assume that ad area is less than half screen, then we have following logic"""
         cnt = 0
         while 1:
@@ -437,8 +443,7 @@ class WebChatAutoImg(AutoImg):
         cnt = 0
         while 1:
             cnt = cnt + 1
-            if cnt == 5:
-                break
+            assert  cnt != 5, 'Find ad above failed'
             try:
                 self.driver.swipe(start_width, start_height, end_width, end_height)
                 self.driver.implicitly_wait(10)
@@ -572,8 +577,10 @@ class WebChatAutoImg(AutoImg):
                 sleep(2)
                 self.driver.get_screenshot_as_file('tmp_img/screenshot.png')
                 img = cv2.imread('tmp_img/screenshot.png', 0)
-                ok, _, _ = self.findMatchedArea(img, self.img_choose_account, self.fp_choose_account)
+                ok, top_left, bottom_right = self.findMatchedArea(img, self.img_choose_account, self.fp_choose_account)
                 # Check whether click the blank area, then will not skip into account content area
+                cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+                cv2.imwrite('tmp_img/choose_account_article.png', img)
                 if False == ok:
                     break
             except:
@@ -614,8 +621,8 @@ class WebChatAutoImg(AutoImg):
             # Calculate ad top area
             crop, img_top_left, img_top_right = self.findMatched(img_gray, self.img_top)
             ad_above_height = left[1] - img_top_right[1]
-            ad_above = self.findAdAbove(ad_above_height, self.screen_width / 2, self.screen_height * 2 / 5, self.screen_width / 2,
-                        self.screen_height * 3/ 5)
+            ad_above = self.findAdAbove(ad_above_height, self.screen_width / 2, self.screen_height * 2 / 8, self.screen_width / 2,
+                        self.screen_height * 3/ 8)
 
         # ad area is smaller than wanted, should enlarge
         if area_height - wanted_height < -3:
@@ -796,8 +803,8 @@ class QQAutoImg(AutoImg):
                     break
             except Exception as e:
                 logger.error('expect:' + repr(e))
-#
-        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+
+        #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
         return top_left, bottom_right
 
     def assembleFeedsAd(self):
@@ -1400,7 +1407,7 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'商业地产V评论', 'ads/4.jpg', 'ad_area/corner-mark.png', 'banner',
+        autoImg = WebChatAutoImg('16:20', 1, u'爱车一派', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)

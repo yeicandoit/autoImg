@@ -1382,6 +1382,54 @@ class ShuQiAutoImg(AutoImg):
         cv2.imwrite(self.composite_ads_path, img_color)
         self.driver.quit()
 
+class TianyaAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
+            'appPackage': 'com.baycode.tianya',
+            'appActivity': '.activity.SplashActivity',
+            'udid': '192.168.56.101:5555',
+        }
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        sleep(12)
+        el = self.driver.find_element_by_name(u'热帖').click()
+        self.driver.implicitly_wait(10)
+        action = TouchAction(self.driver)
+        random_y = random.randint(self.cf.getint('tianya', 'article_top'), self.cf.getint('tianya', 'article_bottom'))
+        action.tap(el, self.screen_width/2, random_y).perform()
+        sleep(8)
+        self.driver.get_screenshot_as_file('screenshot.png')
+        img_color = cv2.imread('screenshot.png')
+        ad = cv2.imread(self.img_paste_ad)
+        banner_width = self.cf.getint('tianya', 'banner_width')
+        banner_height = self.cf.getint('tianya', 'banner_height')
+        ad_resize = cv2.resize(ad, (banner_width, banner_height))
+        cv2.imwrite('tmp_img/tianya_ad.png', ad_resize)
+        ad_corner = cv2.imread(self.cf.get('tianya', 'ad_corner'), cv2.IMREAD_UNCHANGED)
+        ad_corner_resize = cv2.resize(ad_corner, (self.cf.getint('tianya', 'corner_width'),
+                                                                 self.cf.getint('tianya', 'corner_height')))
+        cv2.imwrite('tmp_img/tianya_corner.png', ad_corner_resize)
+        ad_with_corner = self.warterMark('tmp_img/tianya_ad.png', 'tmp_img/tianya_corner.png')
+
+        img_color[self.screen_height-banner_height:self.screen_height, 0:self.screen_width] = ad_with_corner
+        # Add header image
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img_color[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+
+        cv2.imwrite(self.composite_ads_path, img_color)
+
+        self.driver.quit()
+
 class IOSAutoImg(AutoImg):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
@@ -1403,12 +1451,13 @@ class IOSAutoImg(AutoImg):
         print 'Have started ios app!!!'
         self.driver.quit()
 
+
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'爱车一派', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
-                                 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'爱车一派', 'ads/114x114-1.jpg', 'ad_area/corner-mark.png', 'image_text',
+        #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
@@ -1423,6 +1472,7 @@ if __name__ == '__main__':
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')

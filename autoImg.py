@@ -201,7 +201,7 @@ class AutoImg:
         cv2.imwrite('tmp_img/circle_bkg.png', cv2.resize(circle_bkg, (r2, r2)))
         return  self.warterMark('tmp_img/circle_bkg.png', 'tmp_img/circle_new.png')
 
-    def circle_corder_image(self, img_path, radius=30):
+    def circle_corder_image(self, img_path, radius=30, corders=(1,1,1,1)):
         im = Image.open(img_path).convert("RGBA")
         rad = radius  # 设置半径
         circle = Image.new('L', (rad * 2, rad * 2), 0)
@@ -211,10 +211,14 @@ class AutoImg:
         w, h = im.size
         #The circle' four corners are different, so we only use one
         corner = circle.crop((0, 0, rad, rad))
-        alpha.paste(corner, (0, 0))
-        alpha.paste(corner.transpose(Image.ROTATE_90), (0, h - rad))
-        alpha.paste(corner.transpose(Image.ROTATE_270), (w - rad, 0))
-        alpha.paste(corner.transpose(Image.ROTATE_180), (w - rad, h - rad))
+        if corders[0]:
+            alpha.paste(corner, (0, 0))
+        if corders[1]:
+            alpha.paste(corner.transpose(Image.ROTATE_90), (0, h - rad))
+        if corders[2]:
+            alpha.paste(corner.transpose(Image.ROTATE_270), (w - rad, 0))
+        if corders[3]:
+            alpha.paste(corner.transpose(Image.ROTATE_180), (w - rad, h - rad))
         im.putalpha(alpha)
         im.save('tmp_img/circle_corder.png')
         return 'tmp_img/circle_corder.png'
@@ -254,8 +258,8 @@ class AutoImg:
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
                 ok, top_left, bottom_right = self.findMatchedArea(img, split, fp_split)
-                cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
-                cv2.imwrite("tmp_img/debug.png", img)
+                #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+                #cv2.imwrite("tmp_img/debug.png", img)
 
                 if ok:
                     # Do not insert ad in page which has already had an ad
@@ -1400,13 +1404,13 @@ class TianyaAutoImg(AutoImg):
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
-        sleep(12)
+        sleep(15)
         el = self.driver.find_element_by_name(u'热帖').click()
         self.driver.implicitly_wait(10)
         action = TouchAction(self.driver)
         random_y = random.randint(self.cf.getint('tianya', 'article_top'), self.cf.getint('tianya', 'article_bottom'))
         action.tap(el, self.screen_width/2, random_y).perform()
-        sleep(8)
+        sleep(15)
         self.driver.get_screenshot_as_file('screenshot.png')
         img_color = cv2.imread('screenshot.png')
         ad = cv2.imread(self.img_paste_ad)
@@ -1427,6 +1431,141 @@ class TianyaAutoImg(AutoImg):
             img_color[0:self.ad_header_height, 0:self.ad_header_width] = img_header
 
         cv2.imwrite(self.composite_ads_path, img_color)
+
+        self.driver.quit()
+
+class QzoneAutoImg(AutoImg):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo=''):
+        AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path)
+        self.logo = logo
+        self.ad_flag = cv2.imread(self.cf.get('Qzone', 'img_ad_flag'), 0)
+        self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
+        self.split = cv2.imread(self.cf.get('Qzone', 'img_split'), 0)
+        self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
+        logger.debug("logo:%s, fp_ad_flag:%s, fp_split:%s", self.logo, self.fp_ad_flag, self.fp_split)
+
+        self.desired_caps = {
+            'platformName': 'Android',
+            'platformVersion': '4.2.2',
+            'deviceName': 'Genymotion Phone - 4.2.2 - API 17 - 2.9.0',
+            'appPackage': 'com.qzone',
+            'appActivity': 'com.tencent.sc.activity.SplashActivity',
+            'udid': '192.168.56.101:5555',
+        }
+
+    def assembleFeedsAd(self):
+        blank_height = self.cf.getint('Qzone', 'blank_height')
+        logo_diameter = self.cf.getint('Qzone', 'logo_diameter')
+        logo_x = self.cf.getint('Qzone', 'logo_x')
+        logo_y = self.cf.getint('Qzone', 'logo_y')
+        split_height = self.cf.getint('Qzone', 'split_height')
+        flag_height = self.cf.getint('Qzone', 'flag_height')
+        ad_recom_height = self.cf.getint('Qzone', 'ad_recom_height')
+
+        ad_width = self.cf.getint('Qzone', 'ad_width')
+        ad_height = self.cf.getint('Qzone', 'ad_height')
+        ad_bk_width = self.cf.getint('Qzone', 'ad_bk_width')
+        ad_bk_height = self.cf.getint('Qzone', 'ad_bk_height')
+        ad_bk_x = (self.screen_width - ad_width) / 2
+        ad_bk_y = self.cf.getint('Qzone', 'ad_bk_y')
+        ad_bk_radius = self.cf.getint('Qzone', 'ad_bk_radius')
+        word_height = self.cf.getint('Qzone', 'word_height')
+
+        doc_1stline_max_len = self.set1stDocLen(self.doc, 'Qzone')
+        # set ad backgroud
+        if len(self.doc) > doc_1stline_max_len:
+            blank_height = blank_height + word_height
+            ad_bk_y = ad_bk_y + word_height
+        blank = cv2.imread(self.cf.get('Qzone', 'img_blank'))
+        bkg = cv2.resize(blank, (self.screen_width, blank_height))
+        # Add logo
+        logo = self.circle_new(self.logo, self.cf.get('Qzone', 'img_blank'))
+        logo = cv2.resize(logo, (logo_diameter, logo_diameter))
+        bkg[logo_y:logo_y + logo_diameter, logo_x:logo_x + logo_diameter] = logo
+        # Add flag
+        bkg[0:flag_height, 0:self.screen_width] = cv2.imread(self.cf.get('Qzone', 'img_ad_flag'))
+
+        # Add split
+        bkg[blank_height - split_height:blank_height, 0:self.screen_width] \
+            = cv2.imread(self.cf.get('Qzone', 'img_split'))
+
+        # Add ad and recomment
+        bkg[blank_height-split_height-ad_recom_height:blank_height-split_height, 0:self.screen_width] \
+            = cv2.imread(self.cf.get('Qzone', 'img_ad_recom'))
+
+        ad_bk = cv2.imread(self.cf.get('Qzone', 'img_ad_bk'))
+        ad = cv2.imread(self.img_paste_ad)
+        ad = cv2.resize(ad, (ad_width, ad_height))
+        ad_bk[1:1 + ad_height, 1:1 + ad_width] = ad
+        cv2.imwrite('tmp_img/tmp.png', ad_bk)
+        ad_bk_img = self.circle_corder_image('tmp_img/tmp.png', ad_bk_radius, (1,0,1,0))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(blank, (ad_bk_width, ad_bk_height)))
+        ad_bk_ = self.warterMark('tmp_img/tmp.png', ad_bk_img)
+        bkg[ad_bk_y:ad_bk_y + ad_bk_height, ad_bk_x:ad_bk_x + ad_bk_width] = ad_bk_
+        cv2.imwrite('tmp_img/tmp.png', bkg)
+
+        # Print doc and desc in the bkg
+        im = Image.open('tmp_img/tmp.png')
+        draw = ImageDraw.Draw(im)
+        if '' != self.desc:
+            ttfont_ = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.cf.getint('Qzone', 'desc_size'))
+            ad_desc_pos = (self.cf.getint('Qzone', 'desc_x'), self.cf.getint('Qzone', 'desc_y'))
+            ad_desc_color = self.cf.getint('Qzone', 'desc_color')
+            draw.text(ad_desc_pos, self.desc, fill=(ad_desc_color, ad_desc_color, ad_desc_color), font=ttfont_)
+        if '' != self.doc:
+            ttfont = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.cf.getint('Qzone', 'doc_size'))
+            ad_doc_color = self.cf.getint('Qzone', 'doc_color')
+            ad_doc_pos = (self.cf.getint('Qzone', 'doc_x'), self.cf.getint('Qzone', 'doc_y'))
+
+            if len(self.doc) <= doc_1stline_max_len:
+                draw.text(ad_doc_pos, self.doc, fill=(ad_doc_color, ad_doc_color, ad_doc_color), font=ttfont)
+            else:
+                ad_doc_pos1 = (self.cf.getint('Qzone', 'doc_x'), self.cf.getint('Qzone', 'doc_y') + word_height)
+                draw.text(ad_doc_pos, self.doc[:doc_1stline_max_len], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
+                          font=ttfont)
+                draw.text(ad_doc_pos1, self.doc[doc_1stline_max_len:], fill=(ad_doc_color, ad_doc_color, ad_doc_color),
+                          font=ttfont)
+        im.save('tmp_img/tmp.png')
+
+        return cv2.imread('tmp_img/tmp.png')
+
+    def start(self):
+        self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
+        self.driver.implicitly_wait(10)
+        sleep(10)
+        randS = random.randint(1, 3)
+        for _ in range(randS):
+            try:
+                self.driver.swipe(self.screen_width / 2, self.screen_height * 3/ 4, self.screen_width / 2,
+                          self.screen_height / 4)
+                self.driver.implicitly_wait(10)
+            except:
+                pass
+        sleep(1)
+        blank_height = self.cf.getint('Qzone', 'blank_height')
+        if len(self.doc) > self.set1stDocLen(self.doc, 'Qzone'):
+            blank_height = blank_height + self.cf.getint('Qzone', 'word_height')
+        bottom_height = self.cf.getint('Qzone', 'qzone_bottom_height')
+        # The ad area should be >= the biggest feeds ad height(its doc is two line) and qsbk app bottom
+        top_left, bottom_right = self.findFeedsArea(self.split, self.fp_split, self.ad_flag, self.fp_ad_flag,
+                                                    blank_height, bottom_height)
+        self.driver.get_screenshot_as_file('screenshot.png')
+        ad = self.assembleFeedsAd()
+        img = cv2.imread('screenshot.png')
+        bottom_y = self.cf.getint('screen', 'height') - bottom_height
+        ad_bottom_height = bottom_y - bottom_right[1] - blank_height
+        img[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
+            img[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
+        img[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
+
+        # Add header image
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+
+        cv2.imwrite(self.composite_ads_path, img)
 
         self.driver.quit()
 
@@ -1466,18 +1605,19 @@ if __name__ == '__main__':
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
-        #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
-        #                      u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
-        #                       'ok.png', 'ads/logo.jpg', )
+        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
+                              u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
+                               'ok.png', 'ads/insert-600_500.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
+        #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()
 
-        #img = cv2.imread('ad_area/HTC-D316d/browser_split.png')
-        #line = img[2:3, 0:540]
-        #ad_bk = cv2.resize(line, (680, 481))
-        #cv2.imwrite('browser_split.png', line)
+        #img = cv2.imread('ad_area/qzone/ad_bk.png')
+        #img_resize = cv2.resize(img, (681, 381))
+        #cv2.imwrite('ad_area/qzone/ad_bk.png', img_resize)
     except Exception as e:
         traceback.print_exc()

@@ -275,6 +275,11 @@ class AutoImg:
         #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
         return top_left, bottom_right
 
+    def getImgWH(self, img):
+        img_gray = cv2.imread(img, 0)
+        w, h = img_gray.shape[::-1]
+        return w, h
+
     def start(self):
         pass
 
@@ -336,6 +341,7 @@ class WebChatAutoImg(AutoImg):
         self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
         self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
         self.img_top = cv2.imread(self.cf.get('image_path', 'top'), 0)
+        self.img_tousu = cv2.imread(self.cf.get('image_path', 'tousu'), 0)
         self.img_bottom = cv2.imread(self.cf.get('image_path', 'bottom'), 0)
         self.img_choose_account = cv2.imread(self.cf.get('WebChat', 'img_choose_account'), 0)
         self.img_white_bkg = cv2.imread(self.cf.get('image_path', 'white_bkg'))
@@ -344,13 +350,22 @@ class WebChatAutoImg(AutoImg):
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
         self.fp_choose_account = str(imagehash.dhash(Image.fromarray(self.img_choose_account)))
         self.fp_top = str(imagehash.dhash(Image.fromarray(self.img_top)))
-        logger.debug("img_ad_message fingerprint:%s,img_good_message fingerprint:%s,img_write_message fingerprint:%s,"
-                     "img_choose_account fingerprint:%s, img_top fingerprint:%s", self.fp_ad, self.fp_good_message,
-                     self.fp_write_message, self.fp_choose_account, self.fp_top)
+        self.fp_tousu = str(imagehash.dhash(Image.fromarray(self.img_tousu)))
+        logger.debug("fp_ad:%s,fp_good_message:%s,fp_write_message:%s,fp_choose_account:%s,"
+                     "fp_top:%s, fp_tousu:%s", self.fp_ad, self.fp_good_message, self.fp_write_message,
+                     self.fp_choose_account, self.fp_top, self.fp_tousu)
         # All types of ad have the same distance between ad area and good_message/write_message
         self.DISTANCE_GOOD_MESSAGE = self.cf.getint('screen', 'distance_good_message')
         self.DISTANCE_WRITE_MESSAGE = self.cf.getint('screen', 'distance_write_message')
         self.DISTANCE_BOTTOM = self.cf.getint('screen', 'distance_bottom')
+
+    def findTousu(self, img):
+        """ Find the tousu position """
+        crop, top_left, bottom_right = self.findMatched(img, self.img_tousu)
+        fp = str(imagehash.dhash(Image.fromarray(crop)))
+        logger.debug("Found img_tousu_message hash is:" + fp)
+        is_top = self.hammingDistOK(fp, self.fp_tousu)
+        return is_top, top_left, bottom_right
 
     def findAdAreaTop(self, img):
         """ Find the ad position """
@@ -375,12 +390,11 @@ class WebChatAutoImg(AutoImg):
         return self.NONE, top_left, bottom_right
 
     def findAdArea(self, start_width, start_height, end_width, end_height):
+        """We assume that ad area is less than half screen, then we have following logic"""
         self.driver.get_screenshot_as_file('tmp_img/screenshot.png')
         ok, _, _ = self.findMatchedArea(cv2.imread('tmp_img/screenshot.png', 0), self.img_top,
                                         self.fp_top)
         assert ok, 'Should have img_top in account article'
-
-        """We assume that ad area is less than half screen, then we have following logic"""
         cnt = 0
         while 1:
             cnt = cnt + 1
@@ -395,7 +409,7 @@ class WebChatAutoImg(AutoImg):
                     pass
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
-                is_top, top_left, bottom_right = self.findAdAreaTop(img)
+                is_top, top_left, bottom_right = self.findTousu(img)
                 if is_top: # Have found the ad position
                     #Find good_mesage or write_message
                     type, top_left1, bottom_right1 = self.findAdAreaBottom(img)
@@ -426,7 +440,7 @@ class WebChatAutoImg(AutoImg):
                     pass
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
-                is_top, top_left, bottom_right = self.findAdAreaTop(img)
+                is_top, top_left, bottom_right = self.findTousu(img)
                 assert is_top, "Should contain ad top area"
                 # Find good_mesage or write_message
                 type, top_left1, bottom_right1 = self.findAdAreaBottom(img)
@@ -453,7 +467,7 @@ class WebChatAutoImg(AutoImg):
                 self.driver.implicitly_wait(10)
                 self.driver.get_screenshot_as_file("screenshot-above.png")
                 img = cv2.imread('screenshot-above.png', 0)
-                is_top, top_left, bottom_right = self.findAdAreaTop(img)
+                is_top, top_left, bottom_right = self.findTousu(img)
                 #The following comment line is useful to debug, do not remove.
                 # cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
                 #cv2.imwrite('./test.png', img)
@@ -611,7 +625,8 @@ class WebChatAutoImg(AutoImg):
         # Compare ad area and area we need
         area_height = right[1] - left[1]
         img_gray = cv2.imread('screenshot.png', 0)
-        wanted_height = self.ad_height
+        _, h_ad_message = self.getImgWH(self.cf.get('image_path', 'ad_message'))
+        wanted_height = self.ad_height + h_ad_message
         if ad_bottom_type == self.GOOD_MESSAGE:
             wanted_height += self.DISTANCE_GOOD_MESSAGE
         elif ad_bottom_type == self.WRITE_MESSAGE:
@@ -620,8 +635,11 @@ class WebChatAutoImg(AutoImg):
             wanted_height += self.DISTANCE_BOTTOM
 
         # ad area is bigger than wanted, should shrink
-        if area_height - wanted_height > 3:
+        # ad area is bigger than wanted, but there is no message block, paste ad directly
+        if_ad_bottom = if_ad_above = False
+        if area_height - wanted_height > 3 and self.NONE != ad_bottom_type:
             logger.debug("Should shrink ad area")
+            if_ad_above = True
             #  Calculate ad area
             left = (0, left[1] + (area_height - wanted_height))
             # Calculate ad top area
@@ -633,20 +651,30 @@ class WebChatAutoImg(AutoImg):
         # ad area is smaller than wanted, should enlarge
         if area_height - wanted_height < -3:
             logger.debug("Should enlarge ad area")
-            # Calculate ad top area
-            crop, img_top_left, img_top_right = self.findMatched(img_gray, self.img_top)
-            ad_above = img_color[img_top_right[1]+wanted_height-area_height:left[1], 0:self.screen_width]
-            # update ad area
-            left = (0, left[1] + area_height - wanted_height)
+            if self.screen_height / 2 <= left[1]:
+                if_ad_above = True
+                # Calculate ad top area
+                crop, img_top_left, img_top_right = self.findMatched(img_gray, self.img_top)
+                ad_above = img_color[img_top_right[1]+wanted_height-area_height:left[1], 0:self.screen_width]
+                # update ad area
+                left = (0, left[1] + area_height - wanted_height)
+            else:
+                if_ad_bottom = True
+                ad_bottom = img_color[right[1]:self.screen_height+area_height-wanted_height, 0:self.screen_width]
+                right = (self.screen_width, right[1]+wanted_height-area_height)
 
         # if ad area size changed, set area ad above
-        if abs(area_height - wanted_height) > 3:
+        if if_ad_above:
             img_color[img_top_right[1]:left[1], 0:self.screen_width] = ad_above
+        elif if_ad_bottom:
+            img_color[right[1]:self.screen_height, 0:self.screen_width] = ad_bottom
 
         # Paint ad area to be blank
         img_blank = cv2.imread(self.ad_area_path + 'blank.png')
-        img_blank_resize = cv2.resize(img_blank, (right[0] - left[0], right[1] - left[1]))
-        img_color[left[1]:right[1], left[0]:right[0]] = img_blank_resize
+        img_blank_resize = cv2.resize(img_blank, (self.screen_width, right[1] - left[1]))
+        img_color[left[1]:right[1], 0:self.screen_width] = img_blank_resize
+        # Paint img_ad_message
+        img_color[left[1]:left[1]+h_ad_message, 0:self.screen_width] = cv2.imread(self.cf.get('image_path', 'ad_message'))
 
         # Add our ad image
         #if 'banner' == self.ad_type:
@@ -662,7 +690,7 @@ class WebChatAutoImg(AutoImg):
         elif 'image_text' == self.ad_type:
             _, img_ad_resize = self.imageText(self.img_paste_ad, self.img_corner_mark, self.desc, self.doc)
         left_side = (self.screen_width-self.ad_width)/2
-        img_color[left[1]:left[1]+self.ad_height, left_side:left_side+self.ad_width] = img_ad_resize
+        img_color[left[1]+h_ad_message:left[1]+h_ad_message+self.ad_height, left_side:left_side+self.ad_width] = img_ad_resize
 
         # Add header image
         ok, img_header = self.header(self.time, self.battery, self.network)
@@ -1612,7 +1640,7 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'车买买', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
+        autoImg = WebChatAutoImg('16:20', 1, u'最美风景在路上', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)

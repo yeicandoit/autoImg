@@ -487,14 +487,16 @@ class WebChatAutoImg(AutoImg):
 
         front = rgb_channels.astype(np.float32) * alpha_factor
         back = mask_region.astype(np.float32) * (1 - alpha_factor)
-        final_img = front + back
-        img_corner_mark = cv2.resize(final_img, (self.ad_corner_width, self.ad_corner_height))
+        #final_img = front + back
+        #img_corner_mark = cv2.resize(final_img, (self.ad_corner_width, self.ad_corner_height))
+        img_corner_mark = front + back
 
         img_ad = cv2.imread(ad)
         img_ad = cv2.resize(img_ad, (self.ad_img_width, self.ad_img_height))
         img = cv2.resize(self.img_white_bkg, (self.ad_width, self.ad_height))
         img[0:self.ad_height, 0:self.ad_height] = img_ad
-        img[self.ad_height - self.ad_corner_height:self.ad_height, self.ad_width - self.ad_corner_width:self.ad_width] = img_corner_mark
+        #img[self.ad_height - self.ad_corner_height:self.ad_height, self.ad_width - self.ad_corner_width:self.ad_width] = img_corner_mark
+        img[self.ad_height - h_mask:self.ad_height, self.ad_width - w_mask:self.ad_width] = img_corner_mark
         cv2.imwrite('tuwen.png', img) #TODO convert PIL image to Opencv image directly
         ttfont = ImageFont.truetype("font/X1-55W.ttf", self.cf.getint('image_text', 'font_size'))
         im = Image.open('tuwen.png')
@@ -647,18 +649,18 @@ class WebChatAutoImg(AutoImg):
         img_color[left[1]:right[1], left[0]:right[0]] = img_blank_resize
 
         # Add our ad image
-        if 'banner' == self.ad_type:
-            img_ad = self.warterMark(self.img_paste_ad, self.img_corner_mark)
-            img_ad_resize = cv2.resize(img_ad, (self.ad_width, self.ad_height))
+        #if 'banner' == self.ad_type:
+        #    img_ad = self.warterMark(self.img_paste_ad, self.img_corner_mark)
+        #    img_ad_resize = cv2.resize(img_ad, (self.ad_width, self.ad_height))
+        if 'banner' == self.ad_type or 'fine_big' == self.ad_type:
+            img_ad_resize = cv2.resize(cv2.imread(self.img_paste_ad), (self.ad_width, self.ad_height))
+            cv2.imwrite('tmp_img/wechat.png', img_ad_resize)
+            #img_corner_resize = cv2.resize(cv2.imread(self.img_corner_mark, cv2.IMREAD_UNCHANGED),
+            #                               (self.cf.getint('fine_big', 'corner_width'), self.cf.getint('fine_big', 'corner_height')))
+            #cv2.imwrite('tmp_img/fine_big_corner.png', img_corner_resize)
+            img_ad_resize = self.warterMark('tmp_img/wechat.png', self.img_corner_mark)
         elif 'image_text' == self.ad_type:
             _, img_ad_resize = self.imageText(self.img_paste_ad, self.img_corner_mark, self.desc, self.doc)
-        elif 'fine_big' == self.ad_type:
-            img_ad_resize = cv2.resize(cv2.imread(self.img_paste_ad), (self.ad_width, self.ad_height))
-            cv2.imwrite('tmp_img/fine_big.png', img_ad_resize)
-            img_corner_resize = cv2.resize(cv2.imread(self.img_corner_mark, cv2.IMREAD_UNCHANGED),
-                                           (self.cf.getint('fine_big', 'corner_width'), self.cf.getint('fine_big', 'corner_height')))
-            cv2.imwrite('tmp_img/fine_big_corner.png', img_corner_resize)
-            img_ad_resize = self.warterMark('tmp_img/fine_big.png', 'tmp_img/fine_big_corner.png')
         left_side = (self.screen_width-self.ad_width)/2
         img_color[left[1]:left[1]+self.ad_height, left_side:left_side+self.ad_width] = img_ad_resize
 
@@ -1590,6 +1592,14 @@ class IOSAutoImg(AutoImg):
             'udid': '19f479838e81afc27c8f5c526a87676631d36d14',
         }
 
+        #self.desired_caps = {
+        #    'platformName': 'ios',
+        #    'deviceName': 'iPhone 6',
+        #    'platformVersion': '11.0.3',
+        #    'bundleId': 'com.tencent.xin',
+        #    'udid': '77f2a0e6d7faf53cdf8016c7e14d0bf3a6b254b2',
+        #}
+
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
@@ -1602,7 +1612,7 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'汽车点评', 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big',
+        autoImg = WebChatAutoImg('16:20', 1, u'车买买', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)

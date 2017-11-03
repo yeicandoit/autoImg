@@ -106,15 +106,7 @@ def ptu():
             ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
         elif 'QQDongtai' == app:
-            #ai = None
-            #parameters = {'id': tId, 'status': 1}
-            #requests.get(urlUpdate, headers=headers, params=parameters)
-            #if email:
-            #    myEmail.send_email(email, '截图失败'.decode('utf-8'))
-            #logger.info("Do not support QQ dongtai now!!!")
-            #continue
-
-            ai = autoImg.QQAutoImg('feeds', '', mtime, battery, adImg, adCornerImg, adType, network, title,
+            ai = autoImg.QzoneAutoImg(mtime, battery, adImg, adCornerImg, adType, network, title,
                                    doc, doc1stLine, savepath, logo)
         elif 'qiushi' == app:
             ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
@@ -122,6 +114,12 @@ def ptu():
         elif 'shuqi' == app:
             ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
+        elif 'iqiyi' == app:
+            ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                     title, doc, doc1stLine, savepath)
+        elif 'tianya' == app:
+            ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                       title, doc, doc1stLine, savepath)
         else:
             ai = None
             parameters = {'id': tId, 'status': 2}

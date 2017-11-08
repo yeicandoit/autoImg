@@ -1429,6 +1429,12 @@ class TianyaAutoImg(AutoImg):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
 
+        self.img_refresh = cv2.imread(self.cf.get('tianya', 'img_refresh'), 0)
+        self.img_article_flag = cv2.imread(self.cf.get('tianya', 'img_article_flag'), 0)
+        self.fp_refresh = str(imagehash.dhash(Image.fromarray(self.img_refresh)))
+        self.fp_article_flag = str(imagehash.dhash(Image.fromarray(self.img_article_flag)))
+        logger.debug("fp_refresh:%s, fp_article_flag:%s", self.fp_refresh, self.fp_article_flag)
+
         self.desired_caps = {
             'platformName': 'Android',
             'platformVersion': '4.2.2',
@@ -1448,7 +1454,31 @@ class TianyaAutoImg(AutoImg):
         random_y = random.randint(self.cf.getint('tianya', 'article_top'), self.cf.getint('tianya', 'article_bottom'))
         action.tap(el, self.screen_width/2, random_y).perform()
         sleep(15)
-        self.driver.get_screenshot_as_file('screenshot.png')
+
+        #When article does not show, refresh it
+        cnt = 0
+        while 1:
+            cnt = cnt + 1
+            assert cnt != 5, "Do not show tianya article content"
+            try:
+                self.driver.get_screenshot_as_file("screenshot.png")
+                img = cv2.imread('screenshot.png', 0)
+                ok, top_left, bottom_right = self.findMatchedArea(img, self.img_refresh, self.fp_refresh)
+                if ok:
+                    #Click "刷新" to refresh
+                    w, h = self.img_refresh.shape[::-1]
+                    action.tap(el, top_left[0]+w/2, top_left[1]+h/2).perform()
+                    sleep(3)
+                    self.driver.get_screenshot_as_file("screenshot.png")
+                img = cv2.imread('screenshot.png', 0)
+                ok, top_left, bottom_right = self.findMatchedArea(img, self.img_article_flag, self.fp_article_flag)
+                if ok:
+                    break
+                else:
+                    sleep(3)
+            except Exception as e:
+                logger.error('expect:' + repr(e))
+
         img_color = cv2.imread('screenshot.png')
         ad = cv2.imread(self.img_paste_ad)
         banner_width = self.cf.getint('tianya', 'banner_width')
@@ -1640,8 +1670,8 @@ if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
         doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        autoImg = WebChatAutoImg('16:20', 1, u'最美风景在路上', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
-                                 'wifi', title, doc)
+        #autoImg = WebChatAutoImg('16:20', 1, u'爆笑短片', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
+        #                         'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
@@ -1656,7 +1686,7 @@ if __name__ == '__main__':
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()

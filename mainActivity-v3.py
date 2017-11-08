@@ -31,6 +31,7 @@ dictWebAccount = {'car':['汽车之家', '汽车工艺师', '汽车生活', '汽
                   'game':['游戏日报']}
 urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
 urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
+reqTimes= {} #Record times of every ad Ptu request, if times is bigger than 3, drop this ad request.
 
 def run_shell(cmd):
     if 0 != os.system(cmd):
@@ -71,6 +72,12 @@ def ptu():
         suffix = os.path.splitext(row['adImg'])[1]
         adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
         urllib.urlretrieve(row['adImg'], adImg)
+
+        #Record Ptu request time for this ad
+        if reqTimes.has_key(tId):
+            reqTimes[tId] += 1
+        else:
+            reqTimes[tId] = 1
 
         logo = ""
         if '' != row['logo']:
@@ -120,6 +127,9 @@ def ptu():
         elif 'tianya' == app:
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
+        elif 'qnews' == app and adType == 'feeds_big':
+            ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                       title, doc, doc1stLine, savepath)
         else:
             ai = None
             parameters = {'id': tId, 'status': 2}
@@ -128,6 +138,8 @@ def ptu():
                 myEmail.send_email(email, '现在不支持此种截图'.decode('utf-8'))
             mStr = "Do not support %s now!!!" % (app)
             logger.info(mStr)
+            if reqTimes.has_key(tId):
+                del reqTimes[tId]
             continue
 
         ok, mType, msg = ai.compositeImage()
@@ -136,6 +148,8 @@ def ptu():
             parameters = {'id': tId, 'status': 1}
             requests.get(urlUpdate, headers=headers, params=parameters)
             files = [savepath, 'screenshot.png']
+            if reqTimes.has_key(tId):
+                del reqTimes[tId]
             if email:
                 myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), files)
         else:
@@ -149,11 +163,18 @@ def ptu():
                       + u'<br><br>错误信息:' + msg
             myEmail.send_email('wangqiang@optaim.com', content)
             logger.warn("Failed to composite image:" + content)
-            if autoImg.AutoImg.TYPE_ARG == mType:
+            #If parameters err or has failed 3 times for this ad Ptu request
+            if (reqTimes.has_key(tId) and reqTimes[tId] >= 3) or autoImg.AutoImg.TYPE_ARG == mType:
                 parameters = {'id': tId, 'status': 2}
                 requests.get(urlUpdate, headers=headers, params=parameters)
+                if reqTimes.has_key(tId):
+                    if reqTimes[tId] >= 3:
+                        msg = u'您的P图请求没有完成，若是微信公众号P图请求并指定了公众号，请更换其他公众号试试；其他P图请求失败，请' \
+                              u'联系相关负责人！'
+                    del reqTimes[tId]
                 if email:
                     myEmail.send_email(email, msg)
+
 
 if __name__ == '__main__':
     while 1:

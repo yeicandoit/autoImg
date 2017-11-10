@@ -160,7 +160,12 @@ def ptu():
                       + u'<br> 标题:' + title + u'<br> 文案:' + doc \
                       + '<br> DB id:' + str(tId) + u'<br> 第一行文案长度:' + str(doc1stLine) \
                       + u'<br> 邮箱:' + email \
-                      + u'<br><br>错误信息:' + msg
+                      + u'<br><br>错误信息:'
+            try:
+                #msg may contain some Chinese words that could not parse
+                content += msg
+            except:
+                pass
             myEmail.send_email('wangqiang@optaim.com', content)
             logger.warn("Failed to composite image:" + content)
             #If parameters err or has failed 3 times for this ad Ptu request

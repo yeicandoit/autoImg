@@ -723,9 +723,11 @@ class QQAutoImg(AutoImg):
         if 'weather' == plugin:
             self.city = city
             self.img_hot_city = cv2.imread(self.cf.get('image_path', 'hot_city'), 0)
+            self.img_now = cv2.imread(self.cf.get('QQ_weather', 'img_now'), 0)
             self.fp_hot_city = str(imagehash.dhash(Image.fromarray(self.img_hot_city)))
+            self.fp_now = str(imagehash.dhash(Image.fromarray(self.img_now)))
             logger.debug("plugin:%s, city:%s", self.plugin, self.city)
-            logger.debug("img_hot_city fingerprint:%s", self.fp_hot_city)
+            logger.debug("fp_hot_city:%s, fp_now:%s", self.fp_hot_city, self.fp_now)
             self.general_cities = ['hefei', 'fuzhou', 'wuhan']
             self.city_pre = {'hefei':'H', 'fuzhou':'F', 'wuhan':'W'}
 
@@ -798,15 +800,32 @@ class QQAutoImg(AutoImg):
         else:
             self.driver.get_screenshot_as_file("screenshot.png")
 
-        ad_weather = cv2.resize(cv2.imread(self.img_paste_ad), ((self.cf.getint('QQ_weather', 'ad_width'),
-                                                    self.cf.getint('QQ_weather', 'ad_height'))))
-        cv2.imwrite('ad_weather.png', ad_weather)
+        #Find image now first, then paste the image ad
+        img_now2ad_distance = self.cf.getint('QQ_weather', 'img_now2ad_distance')
+        ad_height = self.cf.getint('QQ_weather', 'ad_height')
+        ad_width = self.cf.getint('QQ_weather', 'ad_width')
+        cnt = 0
+        while 1:
+            cnt += 1
+            assert cnt != 5, "Do not find ad area"
+            img_weather = cv2.imread('screenshot.png', 0)
+            ok, tl, br = self.findMatchedArea(img_weather, self.img_now, self.fp_now)
+            if ok and br[1]+img_now2ad_distance+ad_height < self.screen_height:
+                break
+            self.driver.swipe(self.screen_width/2, self.screen_height*3/8, self.screen_width/2, self.screen_height*2/8)
+            self.driver.implicitly_wait(10)
+            sleep(0.5)
+            self.driver.get_screenshot_as_file("screenshot.png")
 
-        ad_watermark = self.warterMark('ad_weather.png', self.img_corner_mark, 'top_right')
+        ad_weather = cv2.resize(cv2.imread(self.img_paste_ad), (ad_width, ad_height))
+        cv2.imwrite('tmp_img/ad_weather.png', ad_weather)
+
+
+
+        ad_watermark = self.warterMark('tmp_img/ad_weather.png', self.img_corner_mark, 'top_right')
+        ad_top_left_x = self.cf.getint('QQ_weather', 'ad_top_left_x')
         im = cv2.imread('screenshot.png')
-        im[self.cf.getint('QQ_weather', 'ad_top_left_y'):self.cf.getint('QQ_weather', 'ad_bottom_right_y'),
-        self.cf.getint('QQ_weather', 'ad_top_left_x'):self.cf.getint('QQ_weather', 'ad_bottom_right_x')] \
-            = ad_watermark
+        im[br[1]+img_now2ad_distance:br[1]+img_now2ad_distance+ad_height, ad_top_left_x:ad_top_left_x + ad_width] = ad_watermark
 
         ok, img_header = self.header(self.time, self.battery, self.network, 'QQ_weather')
         if ok:
@@ -1792,7 +1811,7 @@ if __name__ == '__main__':
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
-        #autoImg = QQAutoImg('weather', 'shanghai', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        autoImg = QQAutoImg('weather', 'beijing', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
@@ -1803,8 +1822,8 @@ if __name__ == '__main__':
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x246.jpg', 'ad_area/corner-ad.png', 'image_text', '4G',
-                               u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
+        #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x246.jpg', 'ad_area/corner-ad.png', 'image_text', '4G',
+        #                       u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
         #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()

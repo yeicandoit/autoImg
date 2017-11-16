@@ -246,7 +246,7 @@ class AutoImg:
         cnt = 0
         while 1:
             cnt = cnt + 1
-            assert cnt != 10, "Do not find ad area"
+            assert cnt != 20, "Do not find ad area"
             try:
                 try:
                     self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4,
@@ -1811,7 +1811,7 @@ if __name__ == '__main__':
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
-        autoImg = QQAutoImg('weather', 'beijing', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = QQAutoImg('weather', 'beijing', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
@@ -1821,7 +1821,7 @@ if __name__ == '__main__':
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x246.jpg', 'ad_area/corner-ad.png', 'image_text', '4G',
         #                       u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
         #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',

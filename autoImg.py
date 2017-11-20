@@ -10,6 +10,7 @@ import ConfigParser
 from appium.webdriver.common.touch_action import TouchAction
 import random
 import util.letterOfCh as lc
+import os
 import logging
 import logging.config
 logging.config.fileConfig('conf/log.conf')
@@ -288,6 +289,11 @@ class AutoImg:
                 iArr.append(int(item))
             return iArr
         return []
+
+    def run_shell(self, cmd):
+        if 0 != os.system(cmd):
+            logger.error("Execute " + cmd + " error, exit")
+            exit(0)
 
     def start(self):
         pass
@@ -1669,11 +1675,26 @@ class QnewsAutoImg(AutoImg):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
 
-        self.img_split = cv2.imread(self.cf.get('Qnews', 'img_split'), 0)
+        if 'feeds_banner' != self.ad_type:
+            self.img_split = cv2.imread(self.cf.get('Qnews', 'img_split'), 0)
+        else:
+            self.img_split = cv2.imread(self.cf.get('Qnews', 'img_banner_split'), 0)
+            self.img_comment = cv2.imread(self.cf.get('Qnews', 'img_comment'), 0)
+            self.fp_comment = str(imagehash.dhash(Image.fromarray(self.img_comment)))
+            self.img_comment_one = cv2.imread(self.cf.get('Qnews', 'img_comment_one'), 0)
+            self.fp_comment_one = str(imagehash.dhash(Image.fromarray(self.img_comment_one)))
+            self.img_comment_one_ = cv2.imread(self.cf.get('Qnews', 'img_comment_one_'), 0)
+            self.fp_comment_one_ = str(imagehash.dhash(Image.fromarray(self.img_comment_one_)))
+
+            logger.debug("fp_comment:%s, fp_comment_one:%s, fp_comment_one_:%s", self.fp_comment, self.fp_comment_one,
+                         self.fp_comment_one_)
+
         self.fp_split = str(imagehash.dhash(Image.fromarray(self.img_split)))
         self.img_ad_flag = cv2.imread(self.cf.get('Qnews', 'img_ad_flag'), 0)
         self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.img_ad_flag)))
         logger.debug("fp_split:%s, fp_ad_flag:%s", self.fp_split, self.fp_ad_flag)
+
+        self.device_udid = '192.168.56.101:5555'
 
         self.desired_caps = {
             'platformName': 'Android',
@@ -1912,6 +1933,71 @@ class QnewsAutoImg(AutoImg):
         self.driver.implicitly_wait(10)
         sleep(10)
 
+        #refresh news
+        try:
+            self.driver.swipe(self.screen_width / 2, self.screen_height / 4, self.screen_width / 2,
+                              self.screen_height * 3 / 4)
+            self.driver.implicitly_wait(10)
+        except:
+            pass
+        sleep(3)
+
+        cnt = 0
+        while 1:
+            cnt += 1
+            assert cnt != 3, "Have not found news with comment in qnew"
+            try:
+                self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4, self.screen_width / 2,
+                                  self.screen_height / 4)
+                self.driver.implicitly_wait(10)
+            except:
+                pass
+            self.driver.get_screenshot_as_file('screenshot.png')
+            ok, top_left, bottom_right = self.findMatchedArea(cv2.imread('screenshot.png', 0), self.img_comment,
+                                                              self.fp_comment)
+            if ok:
+                cmd = "adb -s %s shell input tap %d %d" %(self.device_udid, top_left[0], top_left[1])
+                self.run_shell(cmd)
+                sleep(3)
+                break
+
+        self.driver.get_screenshot_as_file('screenshot.png')
+        ok, _, _ = self.findMatchedArea(cv2.imread('screenshot.png', 0), self.img_comment_one,
+                                               self.fp_comment_one)
+        if ok != True:
+            ok, _, _ = self.findMatchedArea(cv2.imread('screenshot.png', 0), self.img_comment_one_,
+                                            self.fp_comment_one_)
+        assert ok, 'Do not find comment in qnew'
+        pos = self.parseArrStr(self.cf.get('Qnews', 'comment_pos'), ',')
+        cmd = "adb -s %s shell input tap %d %d" % (self.device_udid, pos[0], pos[1])
+        self.run_shell(cmd)
+        sleep(3)
+
+        _, blank_height = self.getImgWH(self.cf.get('Qnews', 'img_banner_area'))
+        bottom_height = self.cf.getint('Qnews', 'bottom_height')
+        top_left, bottom_right = self.findFeedsArea(self.img_split, self.fp_split, self.img_ad_flag, self.fp_ad_flag,
+                                                    blank_height, bottom_height)
+        self.driver.get_screenshot_as_file('screenshot.png')
+        ad_w, ad_h = self.parseArrStr(self.cf.get('Qnews', 'feeds_banner_size'), ',')
+        img_ad = cv2.resize(cv2.imread(self.img_paste_ad), (ad_w, ad_h))
+        ad_x, ad_y = self.parseArrStr(self.cf.get('Qnews', 'feeds_banner_pos'), ',')
+        ad = cv2.imread(self.cf.get('Qnews', 'img_banner_area'))
+        ad[ad_y:ad_y+ad_h, ad_x:ad_x+ad_w] = img_ad
+
+        img_color = cv2.imread('screenshot.png')
+        bottom_y = self.cf.getint('screen', 'height') - bottom_height
+        ad_bottom_height = bottom_y - top_left[1] - blank_height
+        img_color[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
+            img_color[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
+        img_color[top_left[1]:top_left[1] + blank_height, 0:self.screen_width] = ad
+
+        # Add header image
+        ok, img_header = self.header(self.time, self.battery, self.network)
+        if ok:
+            img_color[0:self.ad_header_height, 0:self.ad_header_width] = img_header
+
+        cv2.imwrite(self.composite_ads_path, img_color)
+
         self.driver.quit()
     def start(self):
             if 'feeds_banner' != self.ad_type:
@@ -1970,8 +2056,8 @@ if __name__ == '__main__':
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg,ads/230x160.jpg,ads/230x160.jpg', 'ad_area/corner-ad.png',
-                               'feeds_multi', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
+        autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x330.jpg', 'ad_area/corner-ad.png',
+                               'feeds_banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg', 'ad_area/corner-ad.png',
         #                       'feeds_small', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
 

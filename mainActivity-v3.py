@@ -69,9 +69,22 @@ def ptu():
         wa = ''
         adCornerImg = ''
 
-        suffix = os.path.splitext(row['adImg'])[1]
-        adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
-        urllib.urlretrieve(row['adImg'], adImg)
+        adImgArr = row['adImg'].split(',')
+        if len(adImgArr) == 1:
+            suffix = os.path.splitext(row['adImg'])[1]
+            adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
+            urllib.urlretrieve(row['adImg'], adImg)
+        else:
+            adImg = ''
+            for i in range(0, len(adImgArr)):
+                suffix = os.path.splitext(adImgArr[i])[1]
+                adImgPath = 'webAutoImg/media/upload/' + today + '-' + str(tId) + '-' + str(i) + suffix
+                if i != len(adImgArr) - 1:
+                    adImg += adImgPath + ','
+                else:
+                    adImg += adImgPath
+                urllib.urlretrieve(adImgArr[i], adImgPath)
+
 
         #Record Ptu request time for this ad
         if reqTimes.has_key(tId):
@@ -127,7 +140,7 @@ def ptu():
         elif 'tianya' == app:
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
-        elif 'qnews' == app and adType == 'feeds_big':
+        elif 'qnews' == app:
             ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
         else:

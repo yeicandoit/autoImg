@@ -1195,6 +1195,11 @@ class QSBKAutoImg(AutoImg):
         AutoImg.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
 
+        if 'kai' == self.ad_type:
+            self.img_ad_kai_flag = cv2.imread(self.cf.get('QSBK', 'img_ad_kai_flag'), 0)
+            self.fp_ad_kai_flag = str(imagehash.dhash(Image.fromarray(self.img_ad_kai_flag)))
+            logger.debug("fp_ad_kai_flag:%s", self.fp_ad_kai_flag)
+
         if 'feeds' == self.ad_type:
             self.logo = logo
             self.ad_flag = cv2.imread(self.cf.get('QSBK', 'feeds_flag'), 0)
@@ -1216,7 +1221,16 @@ class QSBKAutoImg(AutoImg):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
         sleep(1)
-        self.driver.get_screenshot_as_file('screenshot.png')
+
+        cnt = 0
+        while 1:
+            assert cnt != 20, "Do not find kai ad in qsbk"
+            self.driver.get_screenshot_as_file('screenshot.png')
+            ok, _, _ = self.findMatchedArea(cv2.imread('screenshot.png', 0), self.img_ad_kai_flag, self.fp_ad_kai_flag)
+            if ok:
+                break
+            sleep(1)
+
         im = cv2.imread('screenshot.png')
         ad = cv2.imread(self.img_paste_ad)
         ad_height = self.cf.getint("QSBK", "kai_height")
@@ -2049,15 +2063,15 @@ if __name__ == '__main__':
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
-        #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
-        #                      u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
-        #                       'ok.png', 'ads/insert-600_500.jpg', )
+        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'kai', '4G',
+                              u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
+                               'ok.png', 'ads/insert-600_500.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x330.jpg', 'ad_area/corner-ad.png',
-                               'feeds_banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
+        #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x330.jpg', 'ad_area/corner-ad.png',
+        #                       'feeds_banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg', 'ad_area/corner-ad.png',
         #                       'feeds_small', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
 

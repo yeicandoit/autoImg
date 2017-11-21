@@ -107,6 +107,22 @@ class Base:
 
         return img
 
+    def warterMarkPos(self, img, mask, pos_tl, pos_br):
+        #mask = cv2.imread(corner_mark, cv2.IMREAD_UNCHANGED)
+        mask_region = img[pos_tl[1]:pos_br[1], pos_tl[0]:pos_br[0]]
+
+        alpha_channel = mask[:, :, 3]
+        rgb_channels = mask[:, :, :3]
+        alpha_factor = alpha_channel[:, :, np.newaxis].astype(np.float32) / 255.0
+        alpha_factor = np.concatenate((alpha_factor, alpha_factor, alpha_factor), axis=2)
+
+        front = rgb_channels.astype(np.float32) * alpha_factor
+        back = mask_region.astype(np.float32) * (1 - alpha_factor)
+        final_img = front + back
+        img[pos_tl[1]:pos_br[1], pos_tl[0]:pos_br[0]] = final_img
+
+        return img
+
     def header(self, time, battery, network, image_cf_path='image_path'):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
         if len(time) < 5:
@@ -198,6 +214,28 @@ class Base:
         circle_bkg = cv2.imread(bkg_path)
         cv2.imwrite('tmp_img/circle_bkg.png', cv2.resize(circle_bkg, (r2, r2)))
         return  self.warterMark('tmp_img/circle_bkg.png', 'tmp_img/circle_new.png')
+
+    def circle_image(self, img_path):
+        ima = Image.open(img_path).convert("RGBA")
+        size = ima.size
+        r2 = min(size[0], size[1])
+        if size[0] != size[1]:
+            ima = ima.resize((r2, r2), Image.ANTIALIAS)
+        circle = Image.new('L', (r2, r2), 0)
+        draw = ImageDraw.Draw(circle)
+        draw.ellipse((0, 0, r2, r2), fill=255)
+        alpha = Image.new('L', (r2, r2), 255)
+        alpha.paste(circle, (0, 0))
+        # The circle' four corners are different, so we only use one
+        radius = r2 / 2
+        corner = circle.crop((0, 0, radius, radius))
+        alpha.paste(corner, (0, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_90), (0, r2 - radius))
+        alpha.paste(corner.transpose(Image.ROTATE_270), (r2 - radius, 0))
+        alpha.paste(corner.transpose(Image.ROTATE_180), (r2 - radius, r2 - radius))
+        ima.putalpha(alpha)
+        ima.save('tmp_img/circle_image.png')
+        return 'tmp_img/circle_image.png'
 
     def circle_corder_image(self, img_path, radius=30, corders=(1,1,1,1)):
         im = Image.open(img_path).convert("RGBA")
@@ -292,12 +330,39 @@ class Base:
             self.logger.error("Execute " + cmd + " error, exit")
             exit(0)
 
+    def clickEliment(self, device_udid, x, y):
+        cmd = "adb -s %s shell input tap %d %d" % (device_udid, x, y)
+        self.run_shell(cmd)
+        sleep(1)
+
     def setHeader(self, img_color):
         # Add header image
         ok, img_header = self.header(self.time, self.battery, self.network)
         if ok:
             img_color[0:self.ad_header_height, 0:self.ad_header_width] = img_header
         return img_color
+
+    def findElement4Awhile(self, img_element, fp_img_element, duration=10):
+        cnt = 0
+        while 1:
+            cnt += 1
+            self.driver.get_screenshot_as_file('screenshot.png')
+            ok, _, _ = self.findMatchedArea(cv2.imread('screenshot.png', 0), img_element, fp_img_element)
+            if ok or cnt > duration:
+                break
+            sleep(1)
+        return ok
+
+    def findElementPos4Awhile(self, img_element, fp_img_element, duration=10):
+        cnt = 0
+        while 1:
+            cnt += 1
+            self.driver.get_screenshot_as_file('screenshot.png')
+            ok, top_left, bottom_right = self.findMatchedArea(cv2.imread('screenshot.png', 0), img_element, fp_img_element)
+            if ok or cnt > duration:
+                break
+            sleep(1)
+        return ok, top_left, bottom_right
 
     def start(self):
         pass
@@ -317,3 +382,10 @@ class Base:
             if self.driver:
                 self.driver.quit()
             return False, Base.TYPE_START, traceback.format_exc()
+
+if __name__ == '__main__':
+    try:
+        autoImage = Base('', 1.0, '')
+        autoImage.circle_corder_image('ad_area/wantu/ad_feeds_detail_.png', 4)
+    except Exception as e:
+        traceback.print_exc()

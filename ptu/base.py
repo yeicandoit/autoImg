@@ -140,29 +140,18 @@ class Base:
         bc_top_left = (self.cf.getint('battery', 'capacity_top_left_x'), self.cf.getint('battery', 'capacity_top_left_y'))
 
         # Set battery
-        if 'conf/H60-L11.conf' == self.conf:
-            y = self.cf.getint('battery', 'top_left_y')
-            y1 = self.cf.getint('battery', 'bottom_right_y')
-            x = self.cf.getint('battery', 'top_left_x')
-            x1 = self.cf.getint('battery', 'bottom_right_x')
-            bc_width = bc_bottom_right[0] - bc_top_left[0]
-            bc_height = bc_bottom_right[1] - bc_top_left[1]
-            bc_setting_width = int(bc_width * battery)
-            img_bc = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
-            img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
-            img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
-            img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
-            img[y:y1, x:x1] = img_battery
-        #elif 'conf/HTC-D316d.conf' == self.conf:
-        #    img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
-        #    img_capacity = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
-        #    b_width = x1 -x
-        #    bc_height = self.cf.getint('battery', 'capacity_height')
-        #    b_height = y1 - y
-        #    bc_setting_height = int(bc_height*battery)
-        #    img_capacity = cv2.resize(img_capacity, (b_width, bc_setting_height))
-        #    img_battery[b_height-bc_setting_height:b_height, 0:b_width] = img_capacity
-        #    img[y:y1, x:x1] = img_battery
+        y = self.cf.getint('battery', 'top_left_y')
+        y1 = self.cf.getint('battery', 'bottom_right_y')
+        x = self.cf.getint('battery', 'top_left_x')
+        x1 = self.cf.getint('battery', 'bottom_right_x')
+        bc_width = bc_bottom_right[0] - bc_top_left[0]
+        bc_height = bc_bottom_right[1] - bc_top_left[1]
+        bc_setting_width = int(bc_width * battery)
+        img_bc = cv2.imread(self.cf.get(image_cf_path, 'battery_capacity'))
+        img_bc = cv2.resize(img_bc, (bc_setting_width, bc_height))
+        img_battery = cv2.imread(self.cf.get(image_cf_path, 'battery'))
+        img_battery[bc_top_left[1]:bc_bottom_right[1], bc_top_left[0]:bc_top_left[0] + bc_setting_width] = img_bc
+        img[y:y1, x:x1] = img_battery
 
         # Set time
         IMG_NUM_WIDTH = self.cf.getint('time', 'num_width')
@@ -293,8 +282,36 @@ class Base:
 
         return len(doc)
 
+    def swipe2Find(self, target, fp_target, count=20):
+        """ insert one ad between the two news.
+        """
+        cnt = 0
+        while 1:
+            cnt = cnt + 1
+            assert cnt != count, "Do not find ad area"
+            try:
+                try:
+                    self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4,
+                                                 self.screen_width / 2, self.screen_height / 4)
+                    self.driver.implicitly_wait(10)
+                except:
+                    pass
+                sleep(0.3)
+                self.driver.get_screenshot_as_file("screenshot.png")
+                img = cv2.imread('screenshot.png', 0)
+                ok, top_left, bottom_right = self.findMatchedArea(img, target, fp_target)
 
-    def findFeedsArea(self, split, fp_split, ad_flag, fp_ad_flag, blank_height, bottom_height = 3):
+                if ok:
+                    break
+            except Exception as e:
+                self.logger.error('expect:' + repr(e))
+
+        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite('tmp_img/debug_swipe2Find.png', img)
+        return top_left, bottom_right
+
+
+    def findFeedsArea(self, split, fp_split, ad_flag, fp_ad_flag, blank_height, bottom_height = 3, is_bottom = True):
         """ insert one ad between the two news.
         """
         cnt = 0
@@ -320,13 +337,34 @@ class Base:
                     has_ad_flag, _, _ = self.findMatchedArea(img, ad_flag, fp_ad_flag)
                     if has_ad_flag:
                         continue
-                    if self.screen_height - bottom_right[1] < blank_height + bottom_height:
+                    if is_bottom and (self.screen_height - bottom_right[1] < blank_height + bottom_height):
                         continue
+                    #Consider inserting ad before split
+                    if False == is_bottom:
+                        w, h = self.getImgWH('screenshot.png')
+                        img_ = img[h/2:h, 0:w]
+                        ok, top_left, bottom_right = self.findMatchedArea(img_, split, fp_split)
+                        top_left = (top_left[0], top_left[1] + h/2)
+                        if False == ok or top_left[1] < blank_height + bottom_height:
+                            continue
+
+                    #Avoid swiping automatically by the app itself, find split after a while
+                    sleep(3)
+                    if is_bottom:
+                        _, top_left, bottom_right = self.findMatchedArea(img, split, fp_split)
+                    else:
+                        w, h = self.getImgWH('screenshot.png')
+                        img_ = img[h/2:h, 0:w]
+                        _, top_left, bottom_right = self.findMatchedArea(img_, split, fp_split)
+                        top_left = (top_left[0], top_left[1] + h / 2)
+                        bottom_right = (bottom_right[0], bottom_right[1] + h/2)
+
                     break
             except Exception as e:
                 self.logger.error('expect:' + repr(e))
 
-        #cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite('tmp_img/debug.png', img)
         return top_left, bottom_right
 
     def getImgWH(self, img):

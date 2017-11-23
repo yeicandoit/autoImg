@@ -84,13 +84,13 @@ class HersAutoImg(Base):
         draw = ImageDraw.Draw(im)
 
         if '' != self.desc:
-            ttfont = ImageFont.truetype("font/UbuntuDroid.ttf", self.config.getint('hers', 'desc_size'))
+            ttfont = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.config.getint('hers', 'desc_size'))
             ad_desc_color = self.parseArrStr(self.config.get('hers', 'desc_color'), ',')
             draw.text((ad_desc_pos[0], ad_desc_pos[1]), self.desc,
                       fill=(ad_desc_color[0], ad_desc_color[1], ad_desc_color[2]), font=ttfont)
 
         if '' != self.doc:
-            ttfont = ImageFont.truetype("font/UbuntuDroid.ttf", self.config.getint('hers', 'doc_size'))
+            ttfont = ImageFont.truetype("font/DroidSansFallbackFull.woff.ttf", self.config.getint('hers', 'doc_size'))
             doc_pos = self.parseArrStr(self.config.get('hers', 'doc_pos'), ',')
             ad_doc_pos = (doc_pos[0], doc_pos[1])
             ad_doc_color = self.parseArrStr(self.config.get('hers', 'doc_color'), ',')
@@ -113,10 +113,13 @@ class HersAutoImg(Base):
         self.driver.implicitly_wait(10)
         sleep(8)
         assert self.findElement4Awhile(self.img_say, self.fp_say), "Have not found say in hers app"
-        self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4,
-                          self.screen_width / 2, self.screen_height / 4)
+        try:
+            self.driver.swipe(self.screen_width / 2, self.screen_height * 3 / 4,
+                            self.screen_width / 2, self.screen_height / 4)
+        except:
+            pass
         self.driver.implicitly_wait(10)
-        assert self.findElement4Awhile(self.img_feeds_flag, self.fp_feeds_flag), "Have not found feeds news in hers app"
+        self.swipe2Find(self.img_feeds_flag, self.fp_feeds_flag)
 
         bottom_height = self.config.getint('hers', 'bottom_height')
         blank_height = self.config.getint('hers', 'ad_feeds_blank_height')
@@ -147,7 +150,8 @@ class HersAutoImg(Base):
 if __name__ == '__main__':
     try:
         autoImg = HersAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
-                               u'省钱小助手', u'看，质量非常好，打折超划算，在家穿很好呢我期待', logo='ads/banner640_100.jpg')
+                               #u'省钱小助手', u'用饮水机吃火锅已经out了，这些奇葩吃法你见过吗？', logo='ads/banner640_100.jpg')
+                            u'省钱小助手', u'看，质量非常好，打折超划算，在家穿很好呢', logo = 'ads/banner640_100.jpg')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

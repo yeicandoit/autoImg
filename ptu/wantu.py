@@ -9,9 +9,10 @@ from base import Base
 
 class WantuAutoImg(Base):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo = ''):
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png',
+                 conf='/Users/iclick/wangqiang/autoImg/conf/wantu_H60-L11.conf', logo = ''):
         Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path)
+                         doc, doc1st_line, save_path, conf)
 
         if 'feeds' == self.ad_type:
             self.logo = logo
@@ -120,7 +121,7 @@ class WantuAutoImg(Base):
 
 if __name__ == '__main__':
     try:
-        autoImg = WantuAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
+        autoImg = WantuAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', '../ad_area/corner-ad.png', 'kai', '4G',
                                u'吉利新帝豪', u'狂欢11.11跨品牌满减，流行尖货满199-100', logo='ads/logo.jpg')
         autoImg.compositeImage()
     except Exception as e:

@@ -8,7 +8,7 @@ import traceback
 from base import Base
 
 class BatteryDoctorAutoImg(Base):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+    def __init__(self, time='', battery=1, img_paste_ad='', img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
         Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
@@ -80,6 +80,7 @@ class BatteryDoctorAutoImg(Base):
 
         self.driver.quit()
 
+    #TODO update batteryCheck method to be staticmethod or classmethod
     def batteryCheck(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     try:
         autoImg = BatteryDoctorAutoImg('11:49', 0.8, 'ads/640x330.jpg', '../ad_area/corner-ad.png',
                                'banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
+        #autoImg = BatteryDoctorAutoImg(ad_type='check')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

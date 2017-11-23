@@ -276,6 +276,24 @@ class Base:
 
         return len(doc)
 
+    def set1stDocLength(self, doc, sec, cf):
+        cl = cf.getint(sec, 'doc_Chinese_width')
+        el = cf.getint(sec, 'doc_English_width')
+        fl = cf.getint(sec, 'doc_1stline_px_len')
+        mlen = 0
+        for i in range(len(doc)):
+            if doc[i] <= '\u2000':
+                mlen += el
+            # I think Chinese and Chinese punctuation(eg:，。：) consume doc_Chinese_width length px
+            else:
+                mlen += cl
+            if mlen > fl:
+                self.logger.debug('doc first line len is:%d', i)
+                return i
+
+        return len(doc)
+
+
     def findFeedsArea(self, split, fp_split, ad_flag, fp_ad_flag, blank_height, bottom_height = 3):
         """ insert one ad between the two news.
         """
@@ -328,7 +346,7 @@ class Base:
     def run_shell(self, cmd):
         if 0 != os.system(cmd):
             self.logger.error("Execute " + cmd + " error, exit")
-            exit(0)
+            #exit(0)
 
     def clickEliment(self, device_udid, x, y):
         cmd = "adb -s %s shell input tap %d %d" % (device_udid, x, y)
@@ -386,6 +404,6 @@ class Base:
 if __name__ == '__main__':
     try:
         autoImage = Base('', 1.0, '')
-        autoImage.circle_corder_image('ad_area/wantu/ad_feeds_detail_.png', 4)
+        autoImage.circle_corder_image('tmp_img/ad_feeds_split_.png', 12)
     except Exception as e:
         traceback.print_exc()

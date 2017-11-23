@@ -11,6 +11,7 @@ import urllib
 import hashlib
 import requests
 import util
+import ptu
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
@@ -36,9 +37,13 @@ reqTimes= {} #Record times of every ad Ptu request, if times is bigger than 3, d
 def run_shell(cmd):
     if 0 != os.system(cmd):
         logger.error("Execute " + cmd + " error, exit")
-        exit(0)
+        #exit(0)
 
-def ptu():
+def loadImg(src, dest):
+    cmd = "curl %s -o %s" %(src, dest)
+    run_shell(cmd)
+
+def pImage():
     today = datetime.date.today().strftime('%Y-%m-%d')
     timestamp = str(int(time.time()))
     authoration = hashlib.md5("zlkjdix827fhx_adfe" + timestamp).hexdigest()
@@ -73,7 +78,8 @@ def ptu():
         if len(adImgArr) == 1:
             suffix = os.path.splitext(row['adImg'])[1]
             adImg = 'webAutoImg/media/upload/' + today + '-' + str(tId) + suffix
-            urllib.urlretrieve(row['adImg'], adImg)
+            #urllib.urlretrieve(row['adImg'], adImg)
+            loadImg(row['adImg'], adImg)
         else:
             adImg = ''
             for i in range(0, len(adImgArr)):
@@ -83,7 +89,8 @@ def ptu():
                     adImg += adImgPath + ','
                 else:
                     adImg += adImgPath
-                urllib.urlretrieve(adImgArr[i], adImgPath)
+                #urllib.urlretrieve(adImgArr[i], adImgPath)
+                loadImg(adImgArr[i], adImgPath)
 
 
         #Record Ptu request time for this ad
@@ -97,7 +104,8 @@ def ptu():
             try:
                 suffix = os.path.splitext(row['logo'])[1]
                 logo = 'webAutoImg/media/upload/' + today + '-logo-' + str(tId) + suffix
-                urllib.urlretrieve(row['logo'], logo)
+                #urllib.urlretrieve(row['logo'], logo)
+                loadImg(row['logo'], logo)
             except:
                 pass
 
@@ -195,10 +203,15 @@ def ptu():
 
 
 if __name__ == '__main__':
+    cnt = 0
     while 1:
+        cnt += 1
         try:
             util.Honor8Awaken.awaken()
-            ptu()
+            #Clean memory about every 10 minutes
+            if 0 == cnt % 60:
+                ptu.memClean.compositeImage()
+            pImage()
             time.sleep(10)
         except Exception as e:
             logger.error(traceback.format_exc())

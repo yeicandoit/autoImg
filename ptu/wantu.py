@@ -46,6 +46,21 @@ class WantuAutoImg(Base):
         ad_origin = cv2.imread(self.img_paste_ad)
         ad_size = self.parseArrStr(self.config.get('Wantu', 'ad_kai_size'), ',')
         ad = cv2.resize(ad_origin, (ad_size[0], ad_size[1]))
+
+        #Add corner
+        ad_kai_corner_1 = self.config.get('Wantu', 'img_ad_kai_corner_1')
+        ad_kai_corner_2 = self.config.get('Wantu', 'img_ad_kai_corner_2')
+        ad_kai_corner_3 = self.config.get('Wantu', 'img_ad_kai_corner_3')
+        ad_kai_corner_1_size = self.getImgWH(ad_kai_corner_1)
+        ad_kai_corner_2_size = self.getImgWH(ad_kai_corner_2)
+        ad_kai_corner_3_size = self.getImgWH(ad_kai_corner_3)
+        tr2 = (ad_size[0] - ad_kai_corner_2_size[0], ad_size[1] - ad_kai_corner_2_size[1])
+        tr3 = (ad_size[0] - ad_kai_corner_3_size[0], 0)
+        br3 = (ad_size[0], ad_kai_corner_3_size[1])
+        ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_1, cv2.IMREAD_UNCHANGED), (0, 0), ad_kai_corner_1_size)
+        ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_2, cv2.IMREAD_UNCHANGED), tr2, ad_size)
+        ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_3, cv2.IMREAD_UNCHANGED), tr3, br3)
+
         img_color = cv2.imread('screenshot.png')
         img_color[0:ad_size[1], 0:ad_size[0]] = ad
         cv2.imwrite(self.composite_ads_path, img_color)
@@ -62,6 +77,15 @@ class WantuAutoImg(Base):
         ad_logo = cv2.resize(ad_logo_origin, (ad_logo_size[0], ad_logo_size[1]))
         cv2.imwrite('tmp_img/ad_logo.png', ad_logo)
         ad_logo = self.circle_image('tmp_img/ad_logo.png')
+
+        #Add corner
+        ad_feeds_corner_1 = self.config.get('Wantu', 'img_ad_feeds_corner_1')
+        ad_feeds_corner_2 = self.config.get('Wantu', 'img_ad_feeds_corner_2')
+        ad_feeds_corner_1_size = self.getImgWH(ad_feeds_corner_1)
+        ad_feeds_corner_2_size = self.getImgWH(ad_feeds_corner_2)
+        tr = (ad_size[0] - ad_feeds_corner_2_size[0], ad_size[1] - ad_feeds_corner_2_size[1])
+        ad = self.warterMarkPos(ad, cv2.imread(ad_feeds_corner_1, cv2.IMREAD_UNCHANGED), (0, 0), ad_feeds_corner_1_size)
+        ad = self.warterMarkPos(ad, cv2.imread(ad_feeds_corner_2, cv2.IMREAD_UNCHANGED), tr, ad_size)
         ad_area[0:ad_size[1], 0:ad_size[0]] = ad
 
         # water mark detail and logo into ad_area
@@ -129,7 +153,7 @@ class WantuAutoImg(Base):
 
 if __name__ == '__main__':
     try:
-        autoImg = WantuAutoImg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
+        autoImg = WantuAutoImg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'kai', '4G',
                                u'入冬成功！赶紧做个水润...', u'资生堂明星洗护终结秋冬干燥，给你飘逸秀发、水润弹肌！', logo='ads/logo.jpg')
         autoImg.compositeImage()
     except Exception as e:

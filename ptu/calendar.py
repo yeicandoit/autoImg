@@ -62,9 +62,15 @@ class CalendarAutoImg(Base):
         # Add ad
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_size[0], ad_size[1]))
+        # Add corner
+        img_ad_feeds_corner = self.config.get('calendar', 'img_ad_feeds_corner')
+        ad_corner_size = self.getImgWH(img_ad_feeds_corner)
+        tl = (0, 0)
+        ad = self.warterMarkPos(ad, cv2.imread(img_ad_feeds_corner, cv2.IMREAD_UNCHANGED), tl, ad_corner_size)
         ad_top_y = blank_height - bottom_height - ad_size[1]
         ad_left_x = (self.screen_width - ad_size[0]) / 2
         bkg[ad_top_y:ad_top_y + ad_size[1], ad_left_x:ad_left_x + ad_size[0]] = ad
+
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg

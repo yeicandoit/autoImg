@@ -151,6 +151,24 @@ def pImage():
         elif 'qnews' == app:
             ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
+        elif 'wantu' == app:
+            ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                       title, doc, doc1stLine, savepath, logo)
+        elif 'hers' == app:
+            ai = ptu.hers.HersAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                        title, doc, doc1stLine, savepath, logo)
+        elif 'calendar' == app:
+            ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                      title, doc, doc1stLine, savepath)
+        elif 'meiyancamera' == app:
+            ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                      title, doc, doc1stLine, savepath)
+        elif 'batterydoctor' == app:
+            ai = ptu.batterydoctor.BatteryDoctorAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                        title, doc, doc1stLine, savepath)
+        elif 'esbook' == app:
+            ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                        title, doc, doc1stLine, savepath)
         else:
             ai = None
             parameters = {'id': tId, 'status': 2}
@@ -208,8 +226,8 @@ if __name__ == '__main__':
         cnt += 1
         try:
             util.Honor8Awaken.awaken()
-            #Clean memory about every 10 minutes
-            if 0 == cnt % 60:
+            #Clean memory about every 5 minutes
+            if 0 == cnt % 30:
                 ptu.memClean.compositeImage()
             pImage()
             time.sleep(10)

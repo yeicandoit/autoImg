@@ -7,6 +7,7 @@ import numpy as np
 import traceback
 import ConfigParser
 import os
+from PIL import Image,ImageDraw,ImageFont
 import logging
 import logging.config
 logging.config.fileConfig('/Users/iclick/wangqiang/autoImg/conf/log.conf')
@@ -17,7 +18,7 @@ class Base:
 
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png',
-                 conf='/Users/iclick/wangqiang/autoImg/conf/H60-L11.conf'):
+                 conf='/Users/iclick/wangqiang/autoImg/conf/H60-L11.conf', background = ''):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read(conf)
         self.conf = conf
@@ -45,6 +46,7 @@ class Base:
         self.ad_header_width = self.cf.getint('screen', 'header_width')
         self.ad_header_height = self.cf.getint('screen', 'header_height')
 
+        self.background = background
         self.driver = None
 
     def hammingDistOK(self, s1, s2):
@@ -180,6 +182,48 @@ class Base:
 
         return True, img
 
+    def updateHeader(self, img, time, battery, network, config, section):
+        """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
+        if len(time) < 5:
+            return False, None
+        if battery > config.getfloat(section, 'capacity_max') or battery < config.getfloat(section, 'capacity_min'):
+            return  False, None
+
+
+        # Set battery
+        capacity_pos = self.parseArrStr(config.get(section, 'capacity_pos'), ',')
+        battery_pos = self.parseArrStr(config.get(section, 'battery_pos'), ',')
+        b_w, b_h = self.getImgWH(config.get(section, 'img_battery_full'))
+        if battery > 0.9:
+            img[battery_pos[1]:battery_pos[1]+b_h, battery_pos[0]:battery_pos[0]+b_w] = \
+                cv2.imread(config.get(section, 'img_battery_full'))
+        else:
+            img[battery_pos[1]:battery_pos[1] + b_h, battery_pos[0]:battery_pos[0] + b_w] = \
+                cv2.imread(config.get(section, 'img_battery'))
+            capacity_width, capacity_height = self.getImgWH(config.get(section, 'img_capacity'))
+            capacity_setting_width = int(capacity_width * battery)
+            img_capacity = cv2.imread(config.get(section, 'img_capacity'))
+            img_bc = cv2.resize(img_capacity, (capacity_setting_width, capacity_height))
+            img[capacity_pos[1]:capacity_pos[1] + capacity_height,
+            capacity_pos[0]:capacity_pos[0] + capacity_setting_width] = img_bc
+
+        # Set time
+        num_size = self.getImgWH(config.get(section, 'img_0'))
+        num_pos = self.parseArrStr(config.get(section, 'num_pos'), ',')
+        time_x = num_pos[0]
+        for i in range(0, len(time)):
+            if ':' == time[i]:
+                colon_width, _ = self.getImgWH(config.get(section, 'img_colon'))
+                img[num_pos[1]:num_pos[1]+num_size[1], time_x:time_x+colon_width] = \
+                    cv2.imread(config.get(section, 'img_colon'))
+                time_x += colon_width
+            else:
+                img[num_pos[1]:num_pos[1]+num_size[1], time_x:time_x+num_size[0]] = \
+                    cv2.imread(config.get(section, 'img_'+time[i]))
+                time_x += num_size[0]
+
+        return True, img
+
     def circle_new(self, img_path, bkg_path):
         ima = Image.open(img_path).convert("RGBA")
         size = ima.size
@@ -265,10 +309,10 @@ class Base:
 
         return len(doc)
 
-    def set1stDocLength(self, doc, sec, cf):
-        cl = cf.getint(sec, 'doc_Chinese_width')
-        el = cf.getint(sec, 'doc_English_width')
-        fl = cf.getint(sec, 'doc_1stline_px_len')
+    def set1stDocLength(self, doc, sec, cf, dclen='doc_Chinese_width', delen='doc_English_width', d1len='doc_1stline_px_len'):
+        cl = cf.getint(sec, dclen)
+        el = cf.getint(sec, delen)
+        fl = cf.getint(sec, d1len)
         mlen = 0
         for i in range(len(doc)):
             if doc[i] <= '\u2000':
@@ -367,6 +411,37 @@ class Base:
         cv2.imwrite('tmp_img/debug.png', img)
         return top_left, bottom_right
 
+    def findFeedsAreaInBg(self, img_bg, split, fp_split, blank_height, bottom_height = 3, is_bottom = True):
+        """ insert one ad between the two news.
+        """
+        #try:
+        img = cv2.imread(img_bg, 0)
+        ok, top_left, bottom_right = self.findMatchedArea(img, split, fp_split)
+
+        if is_bottom:
+            #Instert ad after split
+            if False == ok or self.screen_height - bottom_right[1] < blank_height + bottom_height:
+                img_ = img[0:self.screen_height/2, 0:self.screen_width]
+                ok, top_left, bottom_right = self.findMatchedArea(img_, split, fp_split)
+                if False == ok or self.screen_height - bottom_right[1] < blank_height + bottom_height:
+                    assert 0, 'Do not find feeds area in background'
+        else :
+            # Consider inserting ad before split
+            if False == ok or top_left[1] < blank_height + bottom_height:
+                img_ = img[self.screen_height/2:self.screen_height, 0:self.screen_width]
+                ok, top_left, bottom_right = self.findMatchedArea(img_, split, fp_split)
+                top_left = (top_left[0], top_left[1] + self.screen_height/2)
+                bottom_right = (bottom_right[0], bottom_right[1] + self.screen_height/2)
+                if False == ok or top_left[1] < blank_height + bottom_height:
+                    assert 0, 'Do not find feeds area in background'
+
+        #except Exception as e:
+        #    self.logger.error('expect:' + repr(e))
+
+        cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
+        cv2.imwrite('tmp_img/debug.png', img)
+        return top_left, bottom_right
+
     def getImgWH(self, img):
         img_gray = cv2.imread(img, 0)
         w, h = img_gray.shape[::-1]
@@ -419,6 +494,27 @@ class Base:
                 break
             sleep(1)
         return ok, top_left, bottom_right
+
+    def drawText(self, img, font, doc, doc_size, doc_color, doc_pos, doc_1stline_max_len, word_height,
+                 desc='', desc_size=(0,0), desc_color=(0,0,0), desc_pos=(0,0)):
+        # Print doc and desc in the bkg
+        im = Image.open(img)
+        draw = ImageDraw.Draw(im)
+        if '' != doc:
+            ttfont = ImageFont.truetype(font, doc_size)
+            if len(self.doc) <= doc_1stline_max_len:
+                draw.text(doc_pos, self.doc, fill=(doc_color[0], doc_color[1], doc_color[2]), font=ttfont)
+            else:
+                doc_pos1 = (doc_pos[0], doc_pos[1] + word_height)
+                draw.text(doc_pos, self.doc[:doc_1stline_max_len],
+                          fill=(doc_color[0], doc_color[1], doc_color[2]),
+                          font=ttfont)
+                draw.text(doc_pos1, self.doc[doc_1stline_max_len:],
+                          fill=(doc_color[0], doc_color[1], doc_color[2]),
+                          font=ttfont)
+
+        im.save('tmp_img/tmp.png')
+        return cv2.imread('tmp_img/tmp.png')
 
     def start(self):
         pass

@@ -49,13 +49,13 @@ class Base:
         self.background = background
         self.driver = None
 
-    def hammingDistOK(self, s1, s2):
+    def hammingDistOK(self, s1, s2, dist=3):
         """ If the distance between image is smaller or equal to 3,
             We think the two images are same
             refer to:http://sm4llb0y.blog.163.com/blog/static/1891239720099195041879/
         """
         assert len(s1) == len(s2)
-        return sum([ch1 != ch2 for ch1, ch2 in zip(s1, s2)]) <= 3
+        return sum([ch1 != ch2 for ch1, ch2 in zip(s1, s2)]) <= dist
 
     def findMatched(self, src, target):
         """ Find the matched image and its position """

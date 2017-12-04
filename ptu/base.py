@@ -182,13 +182,17 @@ class Base:
 
         return True, img
 
-    def updateHeader(self, img, time, battery, network, config, section):
+    def updateHeader(self, img, img_header_path, time, battery, network, config, section):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
         if len(time) < 5:
             return False, None
         if battery > config.getfloat(section, 'capacity_max') or battery < config.getfloat(section, 'capacity_min'):
             return  False, None
 
+        # Set default header firstly
+        if "" != img_header_path:
+            header_width, header_height = self.getImgWH(img_header_path)
+            img[0:header_height, 0:header_width] = cv2.imread(img_header_path)
 
         # Set battery
         capacity_pos = self.parseArrStr(config.get(section, 'capacity_pos'), ',')
@@ -496,7 +500,7 @@ class Base:
         return ok, top_left, bottom_right
 
     def drawText(self, img, font, doc, doc_size, doc_color, doc_pos, doc_1stline_max_len, word_height,
-                 desc='', desc_size=(0,0), desc_color=(0,0,0), desc_pos=(0,0)):
+                 desc='', desc_size=0, desc_color=(0,0,0), desc_pos=(0,0)):
         # Print doc and desc in the bkg
         im = Image.open(img)
         draw = ImageDraw.Draw(im)
@@ -512,6 +516,9 @@ class Base:
                 draw.text(doc_pos1, self.doc[doc_1stline_max_len:],
                           fill=(doc_color[0], doc_color[1], doc_color[2]),
                           font=ttfont)
+        if '' != desc:
+            ttfont = ImageFont.truetype(font, desc_size)
+            draw.text(desc_pos, self.desc, fill=(desc_color[0], desc_color[1], desc_color[2]), font=ttfont)
 
         im.save('tmp_img/tmp.png')
         return cv2.imread('tmp_img/tmp.png')

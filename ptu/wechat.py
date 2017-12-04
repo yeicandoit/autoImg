@@ -16,7 +16,6 @@ class WechatAutoImgBg(Base):
         self.config.read('/Users/iclick/wangqiang/autoImg/conf/wechat_iphone6.conf')
 
         self.img_top = cv2.imread(self.config.get('wechat', 'img_top'), 0)
-        self.img_ad_message = cv2.imread(self.config.get('wechat', 'img_ad_message'), 0)
         self.img_tousu = cv2.imread(self.config.get('wechat', 'img_tousu'), 0)
         self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
         self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
@@ -25,7 +24,10 @@ class WechatAutoImgBg(Base):
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
         self.logger.debug("fp_tousu:%s, fp_good_message:%s, fp_write_message:%s", self.fp_tousu, self.fp_good_message,
                           self.fp_write_message)
-
+        if "image_text" != self.ad_type:
+            self.img_ad_message = self.config.get('wechat', 'img_ad_message')
+        else:
+            self.img_ad_message = self.config.get('wechat', 'img_ad_message_image_text')
         self.ad_width, self.ad_height = self.parseArrStr(self.config.get('wechat', self.ad_type+'_size'), ',')
 
         self.NONE = 0
@@ -67,6 +69,34 @@ class WechatAutoImgBg(Base):
         cv2.imwrite('tmp_img/debug_wechat_account.png', img)
         return type, (0, bottom_right[1]), (bottom_right1[0], top_left1[1])
 
+    def imageText(self):
+        ad_bg = cv2.imread(self.config.get('wechat', 'img_image_text_bg'))
+        ad_origin = cv2.imread(self.img_paste_ad)
+        ad_width, ad_height = self.parseArrStr(self.config.get('wechat', 'image_text_ad_size'), ',')
+        ad = cv2.resize(ad_origin, (ad_width, ad_height))
+        ad_x, ad_y = self.parseArrStr(self.config.get('wechat', 'image_text_ad_pos'), ',')
+        ad_bg[ad_y:ad_y+ad_height, ad_x:ad_x+ad_width] = ad
+
+        # Ad corner mark
+        ad_bg_w, ad_bg_h = self.parseArrStr(self.config.get("wechat", 'image_text_size'), ',')
+        corner_w, corner_h = self.getImgWH(self.img_corner_mark)
+        corner_tl = (ad_bg_w-2-corner_w, ad_bg_h-2-corner_h)
+        corner_br = (ad_bg_w-2, ad_bg_h-2)
+        ad_bg = self.warterMarkPos(ad_bg, cv2.imread(self.img_corner_mark, cv2.IMREAD_UNCHANGED), corner_tl, corner_br)
+        cv2.imwrite('tmp_img/tuwen.png', ad_bg)
+
+        # Print doc and desc in the bkg
+        font = self.config.get('wechat', 'font')
+        doc_size = self.config.getint('wechat', 'image_text_doc_size')
+        doc_color = self.parseArrStr(self.config.get('wechat', 'image_text_doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('wechat', 'image_text_doc_pos'), ',')
+        doc_1stline_max_len = self.set1stDocLength(self.doc, 'wechat', self.config)
+        word_height = self.config.getint('wechat', 'image_text_word_height')
+        desc_size = self.config.getint('wechat', 'image_text_desc_size')
+        desc_color = self.parseArrStr(self.config.get('wechat', 'image_text_desc_color'), ',')
+        desc_pos = self.parseArrStr(self.config.get('wechat', 'image_text_desc_pos'), ',')
+        return self.drawText('tmp_img/tuwen.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
+                             word_height, self.desc, desc_size, desc_color, desc_pos)
 
     def start(self):
         ad_bottom_type, left, right = self.findAdArea(self.background)
@@ -76,7 +106,7 @@ class WechatAutoImgBg(Base):
         # Compare ad area and area we need
         area_height = right[1] - left[1]
         img_gray = cv2.imread(self.background, 0)
-        _, h_ad_message = self.getImgWH(self.config.get('wechat', 'img_ad_message'))
+        _, h_ad_message = self.getImgWH(self.img_ad_message)
         wanted_height = self.ad_height + h_ad_message
         if ad_bottom_type == self.GOOD_MESSAGE:
             wanted_height += self.config.getint('wechat', 'distance_good_message')
@@ -119,8 +149,7 @@ class WechatAutoImgBg(Base):
         img_blank_resize = cv2.resize(img_blank, (self.screen_width, right[1] - left[1]))
         img_color[left[1]:right[1], 0:self.screen_width] = img_blank_resize
         # Paint img_ad_message
-        img_color[left[1]:left[1] + h_ad_message, 0:self.screen_width] = cv2.imread(
-            self.config.get('wechat', 'img_ad_message'))
+        img_color[left[1]:left[1] + h_ad_message, 0:self.screen_width] = cv2.imread(self.img_ad_message)
 
         # Add our ad image
         # if 'banner' == self.ad_type:
@@ -134,20 +163,23 @@ class WechatAutoImgBg(Base):
             # cv2.imwrite('tmp_img/fine_big_corner.png', img_corner_resize)
             img_ad_resize = self.warterMark('tmp_img/wechat.png', self.img_corner_mark)
         elif 'image_text' == self.ad_type:
-            _, img_ad_resize = self.imageText(self.img_paste_ad, self.img_corner_mark, self.desc, self.doc)
+            img_ad_resize = self.imageText()
         left_side = (self.screen_width - self.ad_width) / 2
         img_color[left[1] + h_ad_message:left[1] + h_ad_message + self.ad_height,
         left_side:left_side + self.ad_width] = img_ad_resize
 
         # Add header image
-        _, img_color = self.updateHeader(img_color, self.time, self.battery, self.network, self.config, 'header')
+        img_header_path = self.config.get('header', 'img_header')
+        _, img_color = self.updateHeader(img_color, img_header_path, self.time, self.battery, self.network, self.config, 'header')
         cv2.imwrite(self.composite_ads_path, img_color)
 
 
 if __name__ == '__main__':
     try:
-        autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big', '4G',
-                                  background='ads/wechat_bg/IMG_0036.png')
+        #autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big', '4G',
+        #                          background='ads/wechat_bg/IMG_0036.png')
+        autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'image_text', '4G',
+                                  u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告', background='ads/wechat_bg/wechat_image_text.png')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

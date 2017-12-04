@@ -198,7 +198,7 @@ class QnewsAutoImgBg(Base):
         img_color[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
 
         #Add header image
-        ok, img_color = self.updateHeader(img_color, self.time, self.battery, self.network, self.config, 'header')
+        ok, img_color = self.updateHeader(img_color, "", self.time, self.battery, self.network, self.config, 'header')
 
         cv2.imwrite(self.composite_ads_path, img_color)
 
@@ -221,7 +221,7 @@ class QnewsAutoImgBg(Base):
         img_color[top_left[1]:top_left[1] + blank_height, 0:self.screen_width] = ad
 
         # Add header image
-        _, img_color = self.updateHeader(img_color, self.time, self.battery, self.network, self.config, 'header')
+        _, img_color = self.updateHeader(img_color, "", self.time, self.battery, self.network, self.config, 'header')
         cv2.imwrite(self.composite_ads_path, img_color)
 
     def start(self):

@@ -1653,8 +1653,9 @@ class QzoneAutoImg(AutoImg):
         randS = random.randint(1, 3)
         for _ in range(randS):
             try:
+                randM = random.randint(2, 8)
                 self.driver.swipe(self.screen_width / 2, self.screen_height * 3/ 4, self.screen_width / 2,
-                          self.screen_height / 4)
+                          self.screen_height / randM)
                 self.driver.implicitly_wait(10)
             except:
                 pass
@@ -2063,9 +2064,9 @@ if __name__ == '__main__':
         #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
         #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
-        autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'kai', '4G',
-                              u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
-                               'ok.png', 'ads/insert-600_500.jpg', )
+        #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'kai', '4G',
+        #                      u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
+        #                       'ok.png', 'ads/insert-600_500.jpg', )
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
@@ -2075,8 +2076,8 @@ if __name__ == '__main__':
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg', 'ad_area/corner-ad.png',
         #                       'feeds_small', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
 
-        #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-        #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
+        autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
+                            'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/qzone/ad_bk.png')

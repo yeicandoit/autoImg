@@ -17,8 +17,8 @@ class WechatAutoImgBg(Base):
 
         self.img_top = cv2.imread(self.config.get('wechat', 'img_top'), 0)
         self.img_tousu = cv2.imread(self.config.get('wechat', 'img_tousu'), 0)
-        self.img_good_message = cv2.imread(self.cf.get('image_path', 'good_message'), 0)
-        self.img_write_message = cv2.imread(self.cf.get('image_path', 'write_message'), 0)
+        self.img_good_message = cv2.imread(self.config.get('wechat', 'img_good_message'), 0)
+        self.img_write_message = cv2.imread(self.config.get('wechat', 'img_write_message'), 0)
         self.fp_tousu = str(imagehash.dhash(Image.fromarray(self.img_tousu)))
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     try:
         #autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big', '4G',
         #                          background='ads/wechat_bg/IMG_0036.png')
-        autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'image_text', '4G',
+        autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/wechat/iphone6/corner-mark.png', 'image_text', '4G',
                                   u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告', background='ads/wechat_bg/wechat_image_text.png')
         autoImg.compositeImage()
     except Exception as e:

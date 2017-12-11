@@ -113,6 +113,11 @@ def pImage():
                 loadImg(row['logo'], logo)
             except:
                 pass
+        if None != row['basemap']:
+            suffix = os.path.splitext(row['basemap'])[1]
+            bg = 'webAutoImg/media/background/' + today + '-bg-' + str(tId) + suffix
+            # urllib.urlretrieve(row['logo'], logo)
+            loadImg(row['basemap'], bg)
 
         if 'weixin' == app:
             if 0 == row['adCornerType']:  # 活动推广
@@ -129,12 +134,28 @@ def pImage():
                     wcType = 'car';
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
-            ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
-                                        title, doc, doc1stLine, savepath)
+            if None == row['basemap']:
+                ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
+                                            title, doc, doc1stLine, savepath)
+            else:
+                if 0 == row['adCornerType']:  # 活动推广
+                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark.png'
+                elif 1 == row['adCornerType']:  # 商品推广
+                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark-1.png'
+                elif 2 == row['adCornerType']:  # 应用下载
+                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark-2.png'
+
+                ai = ptu.wechat.WechatAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                title, doc, doc1stLine, savepath, background=bg)
         elif 'QQWeather' == app:
-            adCornerImg = 'ad_area/corner-ad.png'
-            ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
-                                   title, doc, doc1stLine, savepath)
+            if None == row['basemap']:
+                adCornerImg = 'ad_area/corner-ad.png'
+                ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
+                                       title, doc, doc1stLine, savepath)
+            else:
+                adCornerImg = 'ad_area/qweather/iphone6/corner-mark.png'
+                ai = ptu.qqweather.QQWeatherBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                title, doc, doc1stLine, savepath, background=bg)
         elif 'QQBrowser' == app:
             ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)

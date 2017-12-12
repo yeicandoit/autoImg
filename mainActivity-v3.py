@@ -157,8 +157,12 @@ def pImage():
                 ai = ptu.qqweather.QQWeatherBg(mtime, battery, adImg, adCornerImg, adType, network,
                                                 title, doc, doc1stLine, savepath, background=bg)
         elif 'QQBrowser' == app:
-            ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.qqbrowser.QQBrowserBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath, background=bg)
         elif 'QQDongtai' == app:
             ai = autoImg.QzoneAutoImg(mtime, battery, adImg, adCornerImg, adType, network, title,
                                    doc, doc1stLine, savepath, logo)

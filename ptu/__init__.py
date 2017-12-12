@@ -9,6 +9,7 @@ import jxedt
 import runbey
 import wechat
 import qqweather
+import qqbrowser
 
 memClean = batterydoctor.BatteryDoctorAutoImg(ad_type='check')
 if __name__ == '__main__':

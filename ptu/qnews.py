@@ -233,16 +233,16 @@ class QnewsAutoImgBg(Base):
 
 if __name__ == '__main__':
     try:
-        autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', '11', 'feeds_big', '4G',
-#                               u'吉利新帝豪', u'17岁被TVB力捧红，两段恋情一段婚姻皆失败，儿子成骄傲', logo='ads/logo.jpg',
-                                u'吉利新帝豪', u'28岁漂亮姑娘患癌男友提出分手 如今她的遗愿让人看哭', logo='ads/logo.jpg',
+        autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', '10', 'feeds_big', '4G',
+                               u'吉利新帝豪', u'17岁被TVB力捧红，两段恋情一段婚姻皆失败，儿子成骄傲', logo='ads/logo.jpg',
+        #                        u'吉利新帝豪', u'长城守护我们，我们守护长城', logo='ads/logo.jpg',
+        #                        u'吉利新帝豪', u'她和胡歌分手，却因为粘孙红雷爆红，如今身价千万豪车出行！', logo='ads/logo.jpg',
                                  background = 'ads/qnews_bg.png')
-        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg,ads/feeds1000x560.jpg,ads/feeds1000x560.jpg', '11', 'feeds_multi', '4G',
-        #                         u'吉利新帝豪', u'28岁漂亮姑娘患癌男友提出分手 如今她的遗愿让人看哭', logo='ads/logo.jpg',
-        #                         background='ads/qnews_bg.png')
+        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg,ads/feeds1000x560.jpg,ads/feeds1000x560.jpg', '10', 'feeds_multi', '4G',
+        #                         u'吉利新帝豪', u'专业管道疏通，半小时到达', logo='ads/logo.jpg', background='ads/qnews_bg.png')
         #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg',
-        #                         '11', 'feeds_small', '4G',
-        #                         u'吉利新帝豪', u'用身份证号就能查出个人信用，你查了吗？', logo='ads/logo.jpg',
+        #                         '10', 'feeds_small', '4G',
+        #                         u'吉利新帝豪', u'奥迪Q5这个外观有看头还降价达19.85万', logo='ads/logo.jpg',
         #                         background='ads/qnews_bg.png')
         #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg',
         #                         '10', 'feeds_banner', '4G',

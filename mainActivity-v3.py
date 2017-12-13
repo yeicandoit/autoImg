@@ -179,8 +179,12 @@ def pImage():
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
         elif 'qnews' == app:
-            ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.qnews.QnewsAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath, background=bg)
         elif 'wantu' == app:
             ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath, logo)

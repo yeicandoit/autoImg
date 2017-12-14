@@ -173,9 +173,6 @@ def pImage():
         elif 'shuqi' == app:
             ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
-        elif 'iqiyi' == app:
-            ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                     title, doc, doc1stLine, savepath)
         elif 'tianya' == app:
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)

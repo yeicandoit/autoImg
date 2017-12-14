@@ -11,7 +11,9 @@ import wechat
 import qqweather
 import qqbrowser
 import qnews
+import systemmanager
 
 memClean = batterydoctor.BatteryDoctorAutoImg(ad_type='check')
+mHonor8Clean = systemmanager.Systemmanager()
 if __name__ == '__main__':
     pass

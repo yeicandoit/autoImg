@@ -6,12 +6,13 @@ import cv2
 import imagehash
 import traceback
 import ConfigParser
+import time
 from base import Base
 
 class BatteryDoctorAutoImg(Base):
-    def __init__(self, time='', battery=1, img_paste_ad='', img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+    def __init__(self, mtime='', battery=1, img_paste_ad='', img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png'):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+        Base.__init__(self, mtime, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
                          doc, doc1st_line, save_path)
 
         self.config = ConfigParser.ConfigParser()
@@ -30,6 +31,7 @@ class BatteryDoctorAutoImg(Base):
             self.logger.debug("fp_ad_banner_flag:%s, fp_charge:%s", self.fp_ad_banner_flag, self.fp_charge)
 
         if 'check' == self.ad_type:
+            self.timestamp = int(time.time())
             self.img_save = cv2.imread(self.config.get('BatteryDoctor', 'img_save'), 0)
             self.fp_save = str(imagehash.dhash(Image.fromarray(self.img_save)))
             self.logger.debug("fp_save:%s", self.fp_save)
@@ -89,8 +91,12 @@ class BatteryDoctorAutoImg(Base):
 
         self.driver.quit()
 
-    #TODO update batteryCheck method to be staticmethod or classmethod
     def batteryCheck(self):
+        timestamp = int(time.time())
+        # Clean android simulator every 5 minutes
+        if timestamp - self.timestamp < 300:
+            return
+        self.timestamp = timestamp
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
         self.driver.implicitly_wait(10)
         sleep(3)

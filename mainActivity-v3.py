@@ -53,7 +53,8 @@ def pImage():
     timestamp = str(int(time.time()))
     authoration = hashlib.md5("zlkjdix827fhx_adfe" + timestamp).hexdigest()
     headers = {'Authorization': authoration, 'Timestamp': timestamp}
-    r = requests.get(urlDemand, headers=headers)
+    # Set requests connect and read timeout before get
+    r = requests.get(urlDemand, headers=headers, timeout=(5,10))
     rJson = r.json()
     logger.debug(r.json())
     if rJson['result'] == 0:
@@ -259,10 +260,11 @@ if __name__ == '__main__':
     while 1:
         cnt += 1
         try:
-            util.Honor8Awaken.awaken()
-            #Clean memory about every 5 minutes
-            if 0 == cnt % 30:
-                ptu.memClean.compositeImage()
+            #util.Honor8Awaken.awaken()
+            #Clean honor8 every harf hour
+            ptu.mHonor8Clean.compositeImage()
+            #Clean android simulator memory about every 5 minutes
+            ptu.memClean.compositeImage()
             pImage()
             time.sleep(10)
         except Exception as e:

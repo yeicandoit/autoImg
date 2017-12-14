@@ -1013,6 +1013,17 @@ class QQBrowserAutoImg(AutoImg):
         self.fp_hot_header = str(imagehash.dhash(Image.fromarray(self.hot_header)))
         self.split = cv2.imread(self.cf.get('image_path', 'browser_split'), 0)
         self.fp_split = str(imagehash.dhash(Image.fromarray(self.split)))
+        self.img_unfinished_big = cv2.imread(self.cf.get('QQBrowser', 'img_unfinished_big'), 0)
+        self.fp_unfinished_big = str(imagehash.dhash(Image.fromarray(self.img_unfinished_big)))
+        self.img_unfinished_small = cv2.imread(self.cf.get('QQBrowser', 'img_unfinished_small'), 0)
+        self.fp_unfinished_small = str(imagehash.dhash(Image.fromarray(self.img_unfinished_small)))
+        self.img_unfinished_multi = cv2.imread(self.cf.get('QQBrowser', 'img_unfinished_multi'), 0)
+        self.fp_unfinished_multi = str(imagehash.dhash(Image.fromarray(self.img_unfinished_multi)))
+
+
+        logger.debug("fp_ad_flag:%s, fp_hot_header:%s, fp_split:%s, fp_unfinished_big:%s, fp_unfinished_small:%s"
+                     "fp_unfinished_multi:%s", self.fp_ad_flag, self.fp_hot_header, self.fp_split,
+                     self.fp_unfinished_big, self.fp_unfinished_small, self.fp_unfinished_multi)
 
         self.ad_desc_pos = (self.cf.getint('QQBrowser', 'desc_x'), self.cf.getint('QQBrowser', 'desc_y'))
         desc_color = self.cf.getint('QQBrowser', 'desc_color')
@@ -1033,9 +1044,10 @@ class QQBrowserAutoImg(AutoImg):
         """ We assume that ad area is less than half screen, then we have following logic.
             QQBrowser will not push ad when accessed too much!!! so insert one ad between news area.
         """
-        for _ in (0,random.randint(2, 6)):
+        for _ in (0,random.randint(1, 2)):
             self.driver.swipe(start_width, start_height, end_width, end_height)
             self.driver.implicitly_wait(10)
+            sleep(1)
         cnt = 0
         while 1:
             cnt = cnt + 1
@@ -1047,6 +1059,14 @@ class QQBrowserAutoImg(AutoImg):
                 sleep(3)
                 self.driver.get_screenshot_as_file("screenshot.png")
                 img = cv2.imread('screenshot.png', 0)
+
+                #If there is some ads has not finished loading, continue
+                ok_big, _, _ = self.findMatchedArea(img, self.img_unfinished_big, self.fp_unfinished_big)
+                ok_small, _, _ = self.findMatchedArea(img, self.img_unfinished_small, self.fp_unfinished_small)
+                ok_multi, _, _ = self.findMatchedArea(img, self.img_unfinished_multi, self.fp_unfinished_multi)
+                if ok_big or ok_small or ok_multi:
+                    continue
+
                 ok, top_left, bottom_right = self.findMatchedArea(img, self.split, self.fp_split)
                 if ok:
                     # Do not insert ad in page which has already had an ad
@@ -2061,8 +2081,8 @@ if __name__ == '__main__':
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
         #                    'wifi', u'吉利新帝豪', u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元', logo='ads/114x114-1.jpg')
         #autoImg = QQAutoImg('weather', 'beijing', '11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        #autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
-        #                           u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
+        autoImg = QQBrowserAutoImg('16:20', 1, 'ads/browser_ad.jpg', 'ad_area/corner-ad.png', 'image_text', 'wifi',
+                                   u'吉利新帝豪', u'两个西方国家做出这一个动作，实力打脸日本，更是切切实实的维护了中国！')
         #autoImg = MoJiAutoImg('11:49', 0.5, 'ads/4.jpg', 'ad_area/corner-ad.png', 'image_text','4G')
         #autoImg = QSBKAutoImg('11:49', 0.5, 'ads/qsbk_feeds.jpg', 'ad_area/corner-ad.png', 'kai', '4G',
         #                      u'设计只属于自己的产品！', u'第四节中国国际马戏节，盛大开幕，只在长隆，惊喜无限！', 15,
@@ -2076,8 +2096,8 @@ if __name__ == '__main__':
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg', 'ad_area/corner-ad.png',
         #                       'feeds_small', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
 
-        autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-                            'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
+        #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
+        #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/qzone/ad_bk.png')

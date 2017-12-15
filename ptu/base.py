@@ -182,6 +182,56 @@ class Base:
 
         return True, img
 
+    def setTime(self, img, mtime, config, section):
+        if len(mtime) < 5:
+            return False, None
+
+        num_size = self.getImgWH(config.get(section, 'img_0'))
+        num_pos = self.parseArrStr(config.get(section, 'num_pos'), ',')
+        time_x = num_pos[0]
+        for i in range(0, len(mtime)):
+            if ':' == mtime[i]:
+                colon_width, _ = self.getImgWH(config.get(section, 'img_colon'))
+                img[num_pos[1]:num_pos[1] + num_size[1], time_x:time_x + colon_width] = \
+                    cv2.imread(config.get(section, 'img_colon'))
+                time_x += colon_width
+            else:
+                img[num_pos[1]:num_pos[1] + num_size[1], time_x:time_x + num_size[0]] = \
+                    cv2.imread(config.get(section, 'img_' + mtime[i]))
+                time_x += num_size[0]
+
+        return True, img
+
+    def setBattery(self, img, battery, config, section):
+        if battery > self.cf.getfloat('header', 'capacity_max') or battery < self.cf.getfloat('header', 'capacity_min'):
+            return False, None
+
+        capacity_pos = self.parseArrStr(config.get(section, 'capacity_pos'), ',')
+        battery_pos = self.parseArrStr(config.get(section, 'battery_pos'), ',')
+        b_w, b_h = self.getImgWH(config.get(section, 'img_battery_full'))
+        if battery > 0.9:
+            img[battery_pos[1]:battery_pos[1] + b_h, battery_pos[0]:battery_pos[0] + b_w] = \
+                cv2.imread(config.get(section, 'img_battery_full'))
+        else:
+            img[battery_pos[1]:battery_pos[1] + b_h, battery_pos[0]:battery_pos[0] + b_w] = \
+                cv2.imread(config.get(section, 'img_battery'))
+            capacity_width, capacity_height = self.getImgWH(config.get(section, 'img_capacity'))
+            capacity_setting_width = int(capacity_width * battery)
+            img_capacity = cv2.imread(config.get(section, 'img_capacity'))
+            img_bc = cv2.resize(img_capacity, (capacity_setting_width, capacity_height))
+            img[capacity_pos[1]:capacity_pos[1] + capacity_height,
+            capacity_pos[0]:capacity_pos[0] + capacity_setting_width] = img_bc
+            try:
+                img_capacity_head = cv2.imread(config.get(section, 'img_capacity_head'))
+                capacity_head_x = capacity_pos[0] + capacity_setting_width
+                capacity_head_width, _ = self.getImgWH(config.get(section, "img_capacity_head"))
+                img[capacity_pos[1]:capacity_pos[1] + capacity_height,
+                capacity_head_x:capacity_head_x + capacity_head_width] = img_capacity_head
+            except:
+                pass
+
+        return True, img
+
     def updateHeader(self, img, img_header_path, time, battery, network, config, section):
         """set time and network. Time looks like 14:01. network is 3G, 4G and wifi"""
         if len(time) < 5:

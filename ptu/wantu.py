@@ -195,9 +195,13 @@ class WantuAutoImgBg(Base):
 
 if __name__ == '__main__':
     try:
-        autoImg = WantuAutoImgBg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'kai', '4G',
-                               u'入冬成功！赶紧做个水润...', u'资生堂明星洗护终结秋冬干燥，给你飘逸秀发、水润弹肌！',
-                                 logo='ads/logo.jpg', background='ads/wantu_bg/IMG_0070.PNG')
+        #autoImg = WantuAutoImgBg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
+        #                       u'入冬成功！赶紧做个水润...', u'资生堂明星洗护终结秋冬干燥，给你飘逸秀发、水润弹肌！',
+        #                         logo='ads/logo.jpg', background='ads/wantu_bg/IMG_0070.PNG')
+        autoImg = WantuAutoImg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
+                                 u'入冬成功！赶紧做个水润...', u'资生堂明星洗护终结秋冬干燥，给你飘逸秀发、水润弹肌！',
+                                 logo='ads/logo.jpg')
+
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

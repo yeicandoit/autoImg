@@ -130,12 +130,98 @@ class CalendarAutoImg(Base):
 
         self.driver.quit()
 
+class CalendarAutoImgBg(Base):
+    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
+                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background=""):
+        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
+                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+
+        self.config = ConfigParser.ConfigParser()
+        self.config.read('/Users/iclick/wangqiang/autoImg/conf/calendar_iphone6.conf')
+
+        self.img_ad_feeds_split = cv2.imread(self.config.get('calendar', 'img_ad_feeds_split'), 0)
+        self.fp_ad_feeds_split = str(imagehash.dhash(Image.fromarray(self.img_ad_feeds_split)))
+        self.logger.debug("fp_ad_feeds_split:%s", self.fp_ad_feeds_split)
+
+    def assembleFeedsAd(self):
+        blank_height = self.config.getint('calendar', 'ad_feeds_blank_height')
+        ad_size = self.parseArrStr(self.config.get('calendar', 'ad_feeds_size'), ',')
+        word_height = self.config.getint('calendar', 'word_height')
+        blank = cv2.imread(self.config.get('calendar', 'img_ad_feeds_blank'))
+
+        doc_1stline_max_len = self.set1stDocLength(self.doc, 'calendar', self.config)
+        # set ad backgroud
+        if len(self.doc) <= doc_1stline_max_len:
+            bkg = cv2.resize(blank, (self.screen_width, blank_height))
+        else:
+            blank_height = blank_height + word_height
+            bkg = cv2.resize(blank, (self.screen_width, blank_height))
+
+        # Add bottom
+        _, bottom_height = self.getImgWH(self.config.get('calendar', 'img_ad_feeds_bottom'))
+        bkg[blank_height - bottom_height:blank_height, 0:self.screen_width] \
+            = cv2.imread(self.config.get('calendar', 'img_ad_feeds_bottom'))
+
+        # Add top
+        split_w, split_h = self.getImgWH(self.config.get('calendar', 'img_ad_feeds_split'))
+        bkg[0:split_h, 0:split_w] = cv2.imread(self.config.get('calendar', 'img_ad_feeds_split'))
+
+        # Add ad
+        ad = cv2.imread(self.img_paste_ad)
+        ad = cv2.resize(ad, (ad_size[0], ad_size[1]))
+        # Add corner
+        #img_ad_feeds_corner = self.config.get('calendar', 'img_ad_feeds_corner')
+        #ad_corner_size = self.getImgWH(img_ad_feeds_corner)
+        tl = (0, 0)
+        #ad = self.warterMarkPos(ad, cv2.imread(img_ad_feeds_corner, cv2.IMREAD_UNCHANGED), tl, ad_corner_size)
+        ad_top_y = blank_height - bottom_height - ad_size[1]
+        ad_left_x = (self.screen_width - ad_size[0]) / 2
+        bkg[ad_top_y:ad_top_y + ad_size[1], ad_left_x:ad_left_x + ad_size[0]] = ad
+
+        cv2.imwrite('tmp_img/tmp.png', bkg)
+
+        # Print doc and desc in the bkg
+        font = self.config.get('calendar', 'font')
+        doc_size = self.config.getint('calendar', 'doc_size')
+        doc_color = self.parseArrStr(self.config.get('calendar', 'doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('calendar', 'doc_pos'), ',')
+        doc_1stline_max_len = self.set1stDocLength(self.doc, 'calendar', self.config)
+
+        return self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos,
+                                     doc_1stline_max_len, word_height)
+
+    def start(self):
+        top_height = self.config.getint('calendar', 'top_height')
+        blank_height = self.config.getint('calendar', 'ad_feeds_blank_height')
+        if len(self.doc) > self.set1stDocLength(self.doc, 'calendar', self.config):
+            blank_height = blank_height + self.config.getint('calendar', 'word_height')
+
+        top_left, bottom_right = self.findFeedsAreaInBg(self.background, self.img_ad_feeds_split, self.fp_ad_feeds_split,
+                                                            blank_height,
+                                                            top_height, False)
+
+        ad = self.assembleFeedsAd()
+        img_color = cv2.imread(self.background)
+        top_y = top_left[1] - blank_height
+        ad_top_height = top_left[1] - top_height - blank_height
+        img_color[top_height: top_y, 0:self.screen_width] = \
+            img_color[top_left[1]-ad_top_height:top_left[1], 0:self.screen_width]
+        img_color[top_left[1]-blank_height:top_left[1], 0:self.screen_width] = ad
+
+        img_header_path = self.config.get('header', 'img_header')
+        ok, img_color = self.updateHeader(img_color, img_header_path, self.time, self.battery, self.network,
+                                          self.config, 'header')
+        cv2.imwrite(self.composite_ads_path, img_color)
 
 if __name__ == '__main__':
     try:
-        autoImg = CalendarAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
-                               #u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家又旺夫，男人娶了就是福！')
-                               u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家')
+        #autoImg = CalendarAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
+        #                       #u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家又旺夫，男人娶了就是福！')
+        #                       u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家')
+        autoImg = CalendarAutoImgBg('11:49', 0.8, 'ads/feeds1000x560.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
+                                  # u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家又旺夫，男人娶了就是福！')
+                                  #u'吉利新帝豪', u'他是第一个捐献骨髓的华人明星，一生都献给了艺术！', background='ads/calendar/IMG_0112.PNG')
+                                  u'吉利新帝豪', u'财神爷提名！2018年财源滚滚，数钱忙的3大生肖！', background='ads/calendar/IMG_0112.PNG')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

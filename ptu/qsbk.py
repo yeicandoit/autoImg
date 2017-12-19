@@ -29,18 +29,16 @@ class QSBKAutoImgBg(Base):
         ad = cv2.resize(ad_origin, (ad_w, ad_h))
 
         #Add corner
-        #ad_kai_corner_1 = self.config.get('Wantu', 'img_ad_kai_corner_1')
-        #ad_kai_corner_2 = self.config.get('Wantu', 'img_ad_kai_corner_2')
-        #ad_kai_corner_3 = self.config.get('Wantu', 'img_ad_kai_corner_3')
-        #ad_kai_corner_1_size = self.getImgWH(ad_kai_corner_1)
-        #ad_kai_corner_2_size = self.getImgWH(ad_kai_corner_2)
-        #ad_kai_corner_3_size = self.getImgWH(ad_kai_corner_3)
-        #tr2 = (ad_w - ad_kai_corner_2_size[0], ad_h - ad_kai_corner_2_size[1])
-        #tr3 = (ad_w - ad_kai_corner_3_size[0], 0)
-        #br3 = (ad_w, ad_kai_corner_3_size[1])
-        #ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_1, cv2.IMREAD_UNCHANGED), (0, 0), ad_kai_corner_1_size)
-        #ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_2, cv2.IMREAD_UNCHANGED), tr2, (ad_w, ad_h))
-        #ad = self.warterMarkPos(ad, cv2.imread(ad_kai_corner_3, cv2.IMREAD_UNCHANGED), tr3, br3)
+        img_skip = self.config.get('qsbk', 'img_skip')
+        ad_skip_size = self.getImgWH(img_skip)
+        tl = (self.screen_width - ad_skip_size[0], 0)
+        br = (self.screen_width, ad_skip_size[1])
+        ad = self.warterMarkPos(ad, cv2.imread(img_skip, cv2.IMREAD_UNCHANGED), tl, br)
+        img_ad_corner = self.config.get('qsbk', 'img_ad_corner')
+        ad_corner_w, ad_corner_h = self.getImgWH(img_ad_corner)
+        tl = (self.screen_width - ad_corner_w, ad_h-ad_corner_h)
+        br = (self.screen_width, ad_h)
+        ad = self.warterMarkPos(ad, cv2.imread(img_ad_corner, cv2.IMREAD_UNCHANGED), tl, br)
 
         img_color = cv2.imread(self.background)
         img_color[0:ad_h, 0:ad_w] = ad
@@ -154,9 +152,9 @@ class QSBKAutoImgBg(Base):
 
 if __name__ == '__main__':
     try:
-        autoImg = QSBKAutoImgBg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
+        autoImg = QSBKAutoImgBg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'kai', '4G',
                                u'花一样的钱，做不一样的家...', u'房市有变，在上海月入1W的可以考虑买房了！',
-                                 logo='ads/qsbk/logo.jpg', background='ads/qsbk/IMG_0108.PNG')
+                                 logo='ads/qsbk/logo.jpg', background='ads/qsbk/IMG_0065.PNG')
         #autoImg = QSBKAutoImgBg('11:49', 0.8, 'ads/browser_ad.jpg', '../ad_area/corner-ad.png', 'feeds', '4G',
         #                        u'苏宁易购', u'别瞎买了，到苏宁换购一台全新苹果花不到3500！',
         #                        logo='ads/qsbk/logo.jpg', background='ads/qsbk/IMG_0064.PNG')

@@ -170,10 +170,10 @@ class CalendarAutoImgBg(Base):
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_size[0], ad_size[1]))
         # Add corner
-        #img_ad_feeds_corner = self.config.get('calendar', 'img_ad_feeds_corner')
-        #ad_corner_size = self.getImgWH(img_ad_feeds_corner)
+        img_ad_feeds_corner = self.config.get('calendar', 'img_ad_feeds_corner')
+        ad_corner_size = self.getImgWH(img_ad_feeds_corner)
         tl = (0, 0)
-        #ad = self.warterMarkPos(ad, cv2.imread(img_ad_feeds_corner, cv2.IMREAD_UNCHANGED), tl, ad_corner_size)
+        ad = self.warterMarkPos(ad, cv2.imread(img_ad_feeds_corner, cv2.IMREAD_UNCHANGED), tl, ad_corner_size)
         ad_top_y = blank_height - bottom_height - ad_size[1]
         ad_left_x = (self.screen_width - ad_size[0]) / 2
         bkg[ad_top_y:ad_top_y + ad_size[1], ad_left_x:ad_left_x + ad_size[0]] = ad
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         #autoImg = CalendarAutoImg('11:49', 0.8, 'ads/feeds1000x560.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
         #                       #u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家又旺夫，男人娶了就是福！')
         #                       u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家')
-        autoImg = CalendarAutoImgBg('11:49', 0.8, 'ads/feeds1000x560.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
+        autoImg = CalendarAutoImgBg('11:49', 1, 'ads/feeds1000x560.jpg', 'ad_area/corner-ad.png', 'feeds', '4G',
                                   # u'吉利新帝豪', u'【今日必读】这4大生肖的女人，赚钱顾家又旺夫，男人娶了就是福！')
                                   #u'吉利新帝豪', u'他是第一个捐献骨髓的华人明星，一生都献给了艺术！', background='ads/calendar/IMG_0112.PNG')
                                   u'吉利新帝豪', u'财神爷提名！2018年财源滚滚，数钱忙的3大生肖！', background='ads/calendar/IMG_0112.PNG')

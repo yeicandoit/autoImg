@@ -12,6 +12,8 @@ import qqweather
 import qqbrowser
 import qnews
 import systemmanager
+import shuqi
+import qsbk
 
 memClean = batterydoctor.BatteryDoctorAutoImg(ad_type='check')
 mHonor8Clean = systemmanager.Systemmanager()

@@ -69,6 +69,11 @@ class MeiyancameraAutoImgBg(Base):
         ad_origin = cv2.imread(self.img_paste_ad)
         ad_size = self.parseArrStr(self.config.get('meiyancamera', 'ad_kai_size'), ',')
         ad = cv2.resize(ad_origin, (ad_size[0], ad_size[1]))
+        img_ad_kai_corner = self.config.get('meiyancamera', 'img_ad_kai_corner')
+        ad_corner_size = self.getImgWH(img_ad_kai_corner)
+        tl = (self.screen_width-ad_corner_size[0], 0)
+        br = (self.screen_width, ad_corner_size[1])
+        ad = self.warterMarkPos(ad, cv2.imread(img_ad_kai_corner, cv2.IMREAD_UNCHANGED), tl, br)
         img_color = cv2.imread(self.background)
         img_color[0:ad_size[1], 0:self.screen_width] = ad
         cv2.imwrite(self.composite_ads_path, img_color)

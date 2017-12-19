@@ -168,11 +168,19 @@ def pImage():
             ai = autoImg.QzoneAutoImg(mtime, battery, adImg, adCornerImg, adType, network, title,
                                    doc, doc1stLine, savepath, logo)
         elif 'qiushi' == app:
-            ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, logo)
+            else:
+                ai = ptu.qsbk.QSBKAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                         title, doc, doc1stLine, savepath, logo, background=bg)
         elif 'shuqi' == app:
-            ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.shuqi.ShuqiAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath, background=bg)
         elif 'tianya' == app:
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
@@ -184,23 +192,40 @@ def pImage():
                 ai = ptu.qnews.QnewsAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, background=bg)
         elif 'wantu' == app:
-            ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                       title, doc, doc1stLine, savepath, logo)
-        elif 'hers' == app:
-            ai = ptu.hers.HersAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                         title, doc, doc1stLine, savepath, logo)
+            else:
+                ai = ptu.wantu.WantuAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                            title, doc, doc1stLine, savepath, logo, background=bg)
+        #TODO have not found related ad
+        # elif 'hers' == app:
+        #    ai = ptu.hers.HersAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+        #                                title, doc, doc1stLine, savepath, logo)
         elif 'calendar' == app:
-            ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                       title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.calendar.CalendarAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                  title, doc, doc1stLine, savepath, background=bg)
         elif 'meiyancamera' == app:
-            ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                       title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.meiyancamera.MeiyancameraAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                          title, doc, doc1stLine, savepath, background=bg)
         elif 'batterydoctor' == app:
             ai = ptu.batterydoctor.BatteryDoctorAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                         title, doc, doc1stLine, savepath)
         elif 'esbook' == app:
-            ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            if None == row['basemap']:
+                ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                         title, doc, doc1stLine, savepath)
+            else:
+                ai = ptu.esbook.EsbookAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
+                                              title, doc, doc1stLine, savepath, background=bg)
         else:
             ai = None
             parameters = {'id': tId, 'status': 2}

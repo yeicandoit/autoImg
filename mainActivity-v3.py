@@ -159,7 +159,7 @@ def pImage():
                                                 title, doc, doc1stLine, savepath, background=bg)
         elif 'QQBrowser' == app:
             if None == row['basemap']:
-                ai = autoImg.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                ai = ptu.qqbrowser.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
             else:
                 ai = ptu.qqbrowser.QQBrowserBg(mtime, battery, adImg, adCornerImg, adType, network,

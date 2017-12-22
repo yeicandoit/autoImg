@@ -84,6 +84,9 @@ class BatteryDoctorAutoImg(Base):
         ad_origin = cv2.imread(self.img_paste_ad)
         ad_size = self.parseArrStr(self.config.get('BatteryDoctor', 'ad_banner_size'), ',')
         ad = cv2.resize(ad_origin, (ad_size[0], ad_size[1]))
+        ad_corner = cv2.imread(self.config.get('BatteryDoctor', 'img_ad_banner_corner'), cv2.IMREAD_UNCHANGED)
+        ad_corner_size = self.getImgWH(self.config.get('BatteryDoctor', 'img_ad_banner_corner'))
+        ad = self.warterMarkPos(ad, ad_corner, (0,0), ad_corner_size)
         ad_pos = self.parseArrStr(self.config.get('BatteryDoctor', 'ad_banner_pos'), ',')
         img_color = cv2.imread('screenshot.png')
         img_color[ad_pos[1]:ad_pos[1] + ad_size[1], ad_pos[0]:ad_pos[0] + ad_size[0]] = ad

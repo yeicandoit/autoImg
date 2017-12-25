@@ -381,17 +381,19 @@ class Base:
 
     def find1stDoclen(self, font, doc, doc_size, doc_pos, check_pos):
         img_blank = self.cf.get('common', 'img_blank')
-        blank_w, blank_h = self.getImgWH(img_blank)
+        _, blank_h = self.getImgWH(img_blank)
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_blank), (self.screen_width, blank_h)))
+
         doc_len = len(doc)
         cnt = 0
         while cnt < doc_len-1:
-            im = Image.open(img_blank)
+            im = Image.open('tmp_img/tmp.png')
             draw = ImageDraw.Draw(im)
             ttfont = ImageFont.truetype(font, doc_size)
             draw.text(doc_pos, doc[:doc_len-cnt], fill=(0, 0, 0), font=ttfont)
             im.save('tmp_img/1st_doc_len.png')
             img_gray = cv2.imread('tmp_img/1st_doc_len.png', 0)
-            img_check = img_gray[0:blank_h, check_pos:blank_w]
+            img_check = img_gray[0:blank_h, check_pos:self.screen_width]
             fp_check = str(imagehash.dhash(Image.fromarray(img_check)))
             if "0000000000000000" == fp_check:
                 break

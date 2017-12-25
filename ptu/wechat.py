@@ -90,11 +90,12 @@ class WechatAutoImgBg(Base):
         doc_size = self.config.getint('wechat', 'image_text_doc_size')
         doc_color = self.parseArrStr(self.config.get('wechat', 'image_text_doc_color'), ',')
         doc_pos = self.parseArrStr(self.config.get('wechat', 'image_text_doc_pos'), ',')
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'wechat', self.config)
         word_height = self.config.getint('wechat', 'image_text_word_height')
         desc_size = self.config.getint('wechat', 'image_text_desc_size')
         desc_color = self.parseArrStr(self.config.get('wechat', 'image_text_desc_color'), ',')
         desc_pos = self.parseArrStr(self.config.get('wechat', 'image_text_desc_pos'), ',')
+        check_pos = doc_pos[0] + self.config.getint('wechat', 'doc_1stline_px_len')
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, doc_size, (doc_pos[0], 0), check_pos)
         return self.drawText('tmp_img/tuwen.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
                              word_height, self.desc, desc_size, desc_color, desc_pos)
 
@@ -179,7 +180,7 @@ if __name__ == '__main__':
         #autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big', '4G',
         #                          background='ads/wechat_bg/IMG_0036.png')
         autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/wechat/iphone6/corner-mark.png', 'image_text', '4G',
-                                  u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告', background='ads/wechat_bg/wechat_image_text.png')
+                                  u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告!!哈哈哈', background='ads/wechat_bg/wechat_image_text.png')
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

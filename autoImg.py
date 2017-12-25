@@ -534,7 +534,9 @@ class WebChatAutoImg(AutoImg):
         if self.doc1st_line > 0:
             doc_1stline_max_len = self.doc1st_line
         else:
-            doc_1stline_max_len = self.set1stDocLen(doc)
+            check_pos = self.ad_doc_pos[0] + self.config.getint('image_text', 'doc_1stline_px_len')
+            doc_1stline_max_len = self.find1stDoclen('font/X1-55W.ttf', self.doc, self.cf.getint('image_text', 'font_size'),
+                                                     (self.ad_doc_pos[0], 0), check_pos)
         if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line should be OK usually
             draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
         else:
@@ -1887,9 +1889,10 @@ class IOSAutoImg(AutoImg):
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
-        doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        #autoImg = WebChatAutoImg('16:20', 1, u'爆笑短片', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'banner',
-        #                         'wifi', title, doc)
+        #doc = u'输入你家房子面积，算一算装修该花多少钱？'
+        doc = u'朋友不借，银行不批，还有我呢！凭身份证，最高50万贷回家'
+        autoImg = WebChatAutoImg('16:20', 1, u'爆笑短片', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'image_text',
+                                 'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
         #                  args.title, args.doc)
         #autoImg = QQAutoImg('feeds', '', '16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
@@ -1904,7 +1907,7 @@ if __name__ == '__main__':
         #autoImg = ShuQiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = IOSAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = AiqiyiAutoImg('11:49', 0.8, 'ads/insert-600_500.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
-        autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
+        #autoImg = TianyaAutoImg('11:49', 0.8, 'ads/banner640_100.jpg', 'ad_area/corner-ad.png', 'image_text', '4G')
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x330.jpg', 'ad_area/corner-ad.png',
         #                       'feeds_banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
         #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg', 'ad_area/corner-ad.png',

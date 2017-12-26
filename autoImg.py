@@ -295,6 +295,27 @@ class AutoImg:
             logger.error("Execute " + cmd + " error, exit")
             exit(0)
 
+    def find1stDoclen(self, font, doc, doc_size, doc_pos, check_pos):
+        img_blank = self.cf.get('common', 'img_blank')
+        _, blank_h = self.getImgWH(img_blank)
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_blank), (self.screen_width, blank_h)))
+
+        doc_len = len(doc)
+        cnt = 0
+        while cnt < doc_len-1:
+            im = Image.open('tmp_img/tmp.png')
+            draw = ImageDraw.Draw(im)
+            ttfont = ImageFont.truetype(font, doc_size)
+            draw.text(doc_pos, doc[:doc_len-cnt], fill=(0, 0, 0), font=ttfont)
+            im.save('tmp_img/1st_doc_len.png')
+            img_gray = cv2.imread('tmp_img/1st_doc_len.png', 0)
+            img_check = img_gray[0:blank_h, check_pos:self.screen_width]
+            fp_check = str(imagehash.dhash(Image.fromarray(img_check)))
+            if "0000000000000000" == fp_check:
+                break
+            cnt += 1
+        return doc_len - cnt
+
     def start(self):
         pass
 
@@ -531,11 +552,11 @@ class WebChatAutoImg(AutoImg):
         im = Image.open('tuwen.png')
         draw = ImageDraw.Draw(im)
         draw.text(self.ad_desc_pos, desc, fill=self.ad_desc_color, font=ttfont) # desc could not be ''
-        if self.doc1st_line > 0:
-            doc_1stline_max_len = self.doc1st_line
-        else:
-            check_pos = self.ad_doc_pos[0] + self.config.getint('image_text', 'doc_1stline_px_len')
-            doc_1stline_max_len = self.find1stDoclen('font/X1-55W.ttf', self.doc, self.cf.getint('image_text', 'font_size'),
+        #if self.doc1st_line > 0:
+        #    doc_1stline_max_len = self.doc1st_line
+        #else:
+        check_pos = self.ad_doc_pos[0] + self.cf.getint('image_text', 'doc_1stline_px_len')
+        doc_1stline_max_len = self.find1stDoclen('font/X1-55W.ttf', self.doc, self.cf.getint('image_text', 'font_size'),
                                                      (self.ad_doc_pos[0], 0), check_pos)
         if len(doc) <= doc_1stline_max_len: # 15 utf-8 character in one line should be OK usually
             draw.text(self.ad_doc_pos, doc, fill=self.ad_doc_color, font=ttfont) # doc could not be ''
@@ -1424,7 +1445,11 @@ class QzoneAutoImg(AutoImg):
         ad_bk_radius = self.cf.getint('Qzone', 'ad_bk_radius')
         word_height = self.cf.getint('Qzone', 'word_height')
 
-        doc_1stline_max_len = self.set1stDocLen(self.doc, 'Qzone')
+        font = 'font/DroidSansFallbackFull.woff.ttf'
+        doc_x = self.cf.getint('Qzone', 'doc_x')
+        check_pos = doc_x + ad_width
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, self.cf.getint('Qzone', 'doc_size'),
+                                                 (doc_x, 0), check_pos)
         # set ad backgroud
         if len(self.doc) > doc_1stline_max_len:
             blank_height = blank_height + word_height
@@ -1480,7 +1505,7 @@ class QzoneAutoImg(AutoImg):
                           font=ttfont)
         im.save('tmp_img/tmp.png')
 
-        return cv2.imread('tmp_img/tmp.png')
+        return cv2.imread('tmp_img/tmp.png'), blank_height
 
     def start(self):
         self.driver = webdriver.Remote('http://localhost:4723/wd/hub', self.desired_caps)
@@ -1496,15 +1521,12 @@ class QzoneAutoImg(AutoImg):
             except:
                 pass
         sleep(1)
-        blank_height = self.cf.getint('Qzone', 'blank_height')
-        if len(self.doc) > self.set1stDocLen(self.doc, 'Qzone'):
-            blank_height = blank_height + self.cf.getint('Qzone', 'word_height')
+        ad, blank_height = self.assembleFeedsAd()
         bottom_height = self.cf.getint('Qzone', 'qzone_bottom_height')
         # The ad area should be >= the biggest feeds ad height(its doc is two line) and qsbk app bottom
         top_left, bottom_right = self.findFeedsArea(self.split, self.fp_split, self.ad_flag, self.fp_ad_flag,
                                                     blank_height, bottom_height)
         self.driver.get_screenshot_as_file('screenshot.png')
-        ad = self.assembleFeedsAd()
         img = cv2.imread('screenshot.png')
         bottom_y = self.cf.getint('screen', 'height') - bottom_height
         ad_bottom_height = bottom_y - bottom_right[1] - blank_height
@@ -1889,8 +1911,8 @@ class IOSAutoImg(AutoImg):
 if __name__ == '__main__':
     try:
         title = u'上海老公房8万翻新出豪宅感！'
-        #doc = u'输入你家房子面积，算一算装修该花多少钱？'
-        doc = u'朋友不借，银行不批，还有我呢！凭身份证，最高50万贷回家'
+        doc = u'吉利帝豪GL，全系享24期0利息，置换补贴高达3000元'
+        #doc = u'朋友不借，银行不批，还有我呢！凭身份证，最高50万贷回家'
         autoImg = WebChatAutoImg('16:20', 1, u'爆笑短片', 'ads/4.jpg', 'ad_area/corner-mark-1.png', 'image_text',
                                  'wifi', title, doc)
         #autoImg = AutoImg(args.time, args.battery, args.webaccount, args.ad, args.corner, args.type, args.network,
@@ -1914,7 +1936,7 @@ if __name__ == '__main__':
         #                       'feeds_small', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
 
         #autoImg = QzoneAutoImg('16:20', 1, 'ads/feeds1000x560.jpg', 'ads/logo_512x512.jpg', 'image_text',
-        #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱！', logo='ads/insert-600_500.jpg')
+        #                    'wifi', u'人人车', u'上海卖车车主：测一测你的爱车能卖多少钱,ceshixia罢了，不要当真！', logo='ads/insert-600_500.jpg')
         autoImg.compositeImage()
 
         #img = cv2.imread('ad_area/qzone/ad_bk.png')

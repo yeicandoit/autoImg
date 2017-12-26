@@ -26,8 +26,16 @@ class QzoneBg(Base):
         ad_w, ad_h = self.parseArrStr(self.config.get('qzone', 'feeds_ad_size'), ',')
         word_height = self.config.getint('qzone', 'word_height')
         blank = cv2.imread(self.config.get('qzone', 'img_blank'))
+        font = self.config.get('qzone', 'font')
+        doc_size = self.config.getint('qzone', 'doc_size')
+        doc_color = self.parseArrStr(self.config.get('qzone', 'doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('qzone', 'doc_pos'), ',')
+        desc_size = self.config.getint('qzone', 'desc_size')
+        desc_color = self.parseArrStr(self.config.get('qzone', 'desc_color'), ',')
+        desc_pos = self.parseArrStr(self.config.get('qzone', 'desc_pos'), ',')
 
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'qzone', self.config)
+        check_pos = (self.screen_width + ad_w) / 2
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, doc_size, (doc_pos[0], 0), check_pos)
         # set ad backgroud
         if len(self.doc) <= doc_1stline_max_len:
             bkg = cv2.resize(blank, (self.screen_width, blank_height))
@@ -63,27 +71,17 @@ class QzoneBg(Base):
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
-        font = self.config.get('qzone', 'font')
-        doc_size = self.config.getint('qzone', 'doc_size')
-        doc_color = self.parseArrStr(self.config.get('qzone', 'doc_color'), ',')
-        doc_pos = self.parseArrStr(self.config.get('qzone', 'doc_pos'), ',')
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'qzone', self.config)
-        desc_size = self.config.getint('qzone', 'desc_size')
-        desc_color = self.parseArrStr(self.config.get('qzone', 'desc_color'), ',')
-        desc_pos = self.parseArrStr(self.config.get('qzone', 'desc_pos'), ',')
-
-        return self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
+        ad_assemble = self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
                              word_height, self.desc, desc_size, desc_color, desc_pos)
 
+        return ad_assemble, blank_height
+
     def start(self):
-        blank_height = self.config.getint('qzone', 'feeds_blank_height')
-        if len(self.doc) > self.set1stDocLength(self.doc, 'qzone', self.config):
-            blank_height += self.config.getint('qzone', 'word_height')
+        ad, blank_height = self.assembleFeedsAd()
         bottom_height = self.config.getint('qzone', 'feeds_bottom_height')
         # The ad area should be >= the biggest feeds ad height(its doc is two line) and app bottom
         top_left, bottom_right = self.findFeedsAreaInBg(self.background, self.img_split, self.fp_split, blank_height,
                                                         bottom_height)
-        ad = self.assembleFeedsAd()
 
         img_color = cv2.imread(self.background)
         bottom_y = self.screen_height - bottom_height
@@ -105,7 +103,7 @@ if __name__ == '__main__':
         #                          u'用最少的成本', u'重点中学女学生操场生产，老师看到刚苏醒的女孩，捂脸大哭直喊：可惜了', background='ads/qzone_bg/IMG_0004.PNG')
 
         autoImg = QzoneBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/qweather/iphone6/corner-mark.png',
-                              'image_text', '4G', u'大秦王朝', u'回到战国当主公，85万大军已集结，你能主宰大秦，统一六国吗？',
+                              'image_text', '4G', u'大秦王朝', u'回到战国当主公，85万大军已集结，你能主宰大秦??**，统一六国吗？!!?',
                                 background='ads/qzone_bg/bg.PNG', stars=2.0, logo='ads/insert-600_500.jpg')
 
         autoImg.compositeImage()

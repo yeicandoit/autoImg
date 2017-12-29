@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-import myEmail
+from util import myEmail
 import autoImg
 import datetime
 import random
@@ -48,7 +48,7 @@ def loadImg(src, dest):
     cmd = "curl %s -o %s" %(src, dest)
     run_shell(cmd)
 
-def pImage():
+def pImage(test_data=None):
     today = datetime.date.today().strftime('%Y-%m-%d')
     timestamp = str(int(time.time()))
     authoration = hashlib.md5("zlkjdix827fhx_adfe" + timestamp).hexdigest()
@@ -61,6 +61,9 @@ def pImage():
         demands = rJson['message']['demands']
     else:
         demands = []
+
+    if None != test_data:
+        demands = test_data
 
     for row in demands:
         app = row['app']
@@ -120,7 +123,10 @@ def pImage():
             # urllib.urlretrieve(row['logo'], logo)
             loadImg(row['basemap'], bg)
 
+        subject = u"自动P图"
+
         if 'weixin' == app:
+            subject += u"-微信公众号-"
             if 0 == row['adCornerType']:  # 活动推广
                 adCornerImg = 'ad_area/corner-mark.png'
             elif 1 == row['adCornerType']:  # 商品推广
@@ -135,6 +141,7 @@ def pImage():
                     wcType = 'car';
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
+            subject += wa
             if None == row['basemap']:
                 ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
                                             title, doc, doc1stLine, savepath)
@@ -149,6 +156,7 @@ def pImage():
                 ai = ptu.wechat.WechatAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                                 title, doc, doc1stLine, savepath, background=bg)
         elif 'QQWeather' == app:
+            subject += u"-QQ天气"
             if None == row['basemap']:
                 adCornerImg = 'ad_area/corner-ad.png'
                 ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
@@ -158,6 +166,7 @@ def pImage():
                 ai = ptu.qqweather.QQWeatherBg(mtime, battery, adImg, adCornerImg, adType, network,
                                                 title, doc, doc1stLine, savepath, background=bg)
         elif 'QQBrowser' == app:
+            subject += u"-QQ浏览器"
             if None == row['basemap']:
                 ai = ptu.qqbrowser.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
@@ -165,9 +174,11 @@ def pImage():
                 ai = ptu.qqbrowser.QQBrowserBg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, background=bg)
         elif 'QQDongtai' == app:
+            subject += u"-QQ空间"
             ai = autoImg.QzoneAutoImg(mtime, battery, adImg, adCornerImg, adType, network, title,
                                    doc, doc1stLine, savepath, logo)
         elif 'qiushi' == app:
+            subject += u"-糗事百科"
             if None == row['basemap']:
                 ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, logo)
@@ -175,6 +186,7 @@ def pImage():
                 ai = ptu.qsbk.QSBKAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                          title, doc, doc1stLine, savepath, logo, background=bg)
         elif 'shuqi' == app:
+            subject += u"-书旗小说"
             if None == row['basemap']:
                 ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
@@ -182,9 +194,11 @@ def pImage():
                 ai = ptu.shuqi.ShuqiAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, background=bg)
         elif 'tianya' == app:
+            subject += u"-天涯论坛"
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
         elif 'qnews' == app:
+            subject += u"-腾讯新闻"
             if None == row['basemap']:
                 ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
@@ -192,6 +206,7 @@ def pImage():
                 ai = ptu.qnews.QnewsAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath, background=bg)
         elif 'wantu' == app:
+            subject += u"-玩图"
             if None == row['basemap']:
                 ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                         title, doc, doc1stLine, savepath, logo)
@@ -203,6 +218,7 @@ def pImage():
         #    ai = ptu.hers.HersAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
         #                                title, doc, doc1stLine, savepath, logo)
         elif 'calendar' == app:
+            subject += u"-万年历"
             if None == row['basemap']:
                 ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                       title, doc, doc1stLine, savepath)
@@ -210,6 +226,7 @@ def pImage():
                 ai = ptu.calendar.CalendarAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                                   title, doc, doc1stLine, savepath, background=bg)
         elif 'meiyancamera' == app:
+            subject += u"-美颜相机"
             if None == row['basemap']:
                 ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                       title, doc, doc1stLine, savepath)
@@ -217,15 +234,21 @@ def pImage():
                 ai = ptu.meiyancamera.MeiyancameraAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                                           title, doc, doc1stLine, savepath, background=bg)
         elif 'batterydoctor' == app:
+            subject += u"-金山电池医生"
             ai = ptu.batterydoctor.BatteryDoctorAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                         title, doc, doc1stLine, savepath)
         elif 'esbook' == app:
+            subject += u"-宜搜小说"
             if None == row['basemap']:
                 ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                         title, doc, doc1stLine, savepath)
             else:
                 ai = ptu.esbook.EsbookAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
                                               title, doc, doc1stLine, savepath, background=bg)
+        elif 'jxedt' == app:
+            subject += u"-驾校一点通"
+            ai = ptu.jxedt.JxedtAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                          title, doc, doc1stLine, savepath)
         else:
             ai = None
             parameters = {'id': tId, 'status': 2}
@@ -247,7 +270,8 @@ def pImage():
             if reqTimes.has_key(tId):
                 del reqTimes[tId]
             if email:
-                myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), files)
+                subject += u"-成功"
+                myEmail.send_email(email, '若有问题，请联系王强：410342333'.decode('utf-8'), files, subject)
         else:
             content = 'Failed ad info is<br> app:' + app + u'<br> 广告类型:' + adType \
                       + u'<br> 广告:' + adImg + u'<br> 角标:' + adCornerImg \
@@ -262,7 +286,8 @@ def pImage():
                 content += msg
             except:
                 pass
-            myEmail.send_email('wangqiang@optaim.com', content)
+            subject += u"-失败"
+            myEmail.send_email('wangqiang@optaim.com', content, subject=subject)
             logger.warn("Failed to composite image:" + content)
             #If parameters err or has failed 3 times for this ad Ptu request
             if (reqTimes.has_key(tId) and reqTimes[tId] >= 3) or autoImg.AutoImg.TYPE_ARG == mType:
@@ -274,7 +299,7 @@ def pImage():
                               u'联系相关负责人！'
                     del reqTimes[tId]
                 if email:
-                    myEmail.send_email(email, msg)
+                    myEmail.send_email(email, msg, subject=subject)
 
 
 if __name__ == '__main__':

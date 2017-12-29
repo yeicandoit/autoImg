@@ -66,12 +66,12 @@ def get_mails(prefix, demand_day):
     server.quit()
     return  False
 
-def send_email(to, content='', files=None):
+def send_email(to, content='', files=None, subject="自动P图"):
     user = "wangqiang@optaim.com"
     pwd = "Zhiyunzhong6868"
 
     msg = MIMEMultipart()
-    msg["Subject"] = "自动P图"
+    msg["Subject"] = subject
     msg["From"] = user
     msg["To"] = to
     msg.attach(MIMEText(content, 'html', 'utf-8'))
@@ -89,4 +89,4 @@ def send_email(to, content='', files=None):
 
 if __name__ == '__main__':
     #get_mails('test_email')
-    send_email("ads/4.jpg", "wangqiang@optaim.com")
+    send_email("wangqiang@optaim.com", 'hellow', ["ads/4.jpg"], '自动P图-自主设置主题')

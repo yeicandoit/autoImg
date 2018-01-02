@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
-from util import myEmail
-import autoImg
 import datetime
 import random
 import traceback
 import time
 import logging
-import urllib
 import hashlib
 import requests
-import util
+import subprocess
+from util import myEmail
+import autoImg
 import ptu
 
 logging.config.fileConfig('conf/log.conf')
@@ -303,6 +302,7 @@ def pImage(test_data=None):
 
 
 if __name__ == '__main__':
+    subprocess.Popen("python util/monitor.py", shell=True)
     cnt = 0
     while 1:
         cnt += 1

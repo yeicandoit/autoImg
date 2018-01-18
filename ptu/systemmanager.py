@@ -10,7 +10,7 @@ from base import Base
 
 class Systemmanager(Base):
     def __init__(self):
-        Base.__init__(self, '', 0, '', '', '', '', '', '', 0, '')
+        Base.__init__(self, '', 0, '', '', '', '', '', '')
 
         self.img_optimization = cv2.imread("ad_area/systemmanager/Honor8/optimization.png", 0)
         self.fp_optimization = str(imagehash.dhash(Image.fromarray(self.img_optimization)))

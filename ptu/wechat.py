@@ -7,14 +7,14 @@ import ConfigParser
 from base import Base
 
 class WechatAutoImgBg(Base):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background=''):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+    def __init__(self, params):
+        Base.__init__(self, params['time'], params['battery'], params['adImg'], params['adType'], params['network'],
+                      params['title'], params['doc'], params['savePath'], params['conf'], params['basemap'])
 
         self.config = ConfigParser.ConfigParser()
-        self.config.read('/Users/iclick/wangqiang/autoImg/conf/wechat_iphone6.conf')
+        self.config.read(params['config'])
 
+        self.img_corner_mark = self.config.get('wechat', "img_corner_mark_" + str(params['adCornerType']))
         self.img_top = cv2.imread(self.config.get('wechat', 'img_top'), 0)
         self.img_tousu = cv2.imread(self.config.get('wechat', 'img_tousu'), 0)
         self.img_good_message = cv2.imread(self.config.get('wechat', 'img_good_message'), 0)
@@ -179,8 +179,39 @@ if __name__ == '__main__':
     try:
         #autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/corner-mark.png', 'fine_big', '4G',
         #                          background='ads/wechat_bg/IMG_0036.png')
-        autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/wechat/iphone6/corner-mark.png', 'image_text', '4G',
-                                  u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告!!哈哈哈', background='ads/wechat_bg/wechat_image_text.png')
+        #autoImg = WechatAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', 'ad_area/wechat/iphone6/corner-mark.png', 'image_text', '4G',
+        #                          u'用最少的成本', u'投放适合本地商户的朋友圈本地推广广告!!哈哈哈', background='ads/wechat_bg/wechat_image_text.png')
+        params = {
+            u'adCornerType': 2,
+            u'battery': 0.8,
+            u'adImg': u'ads/feeds1000x560.jpg',
+            u'app': u'jxedt',
+            u'webAccount': u'汽车之家',
+            u'logo': None,
+            u'id': 1010,
+            u'wcType': u'information',
+            u'network': u'wifi',
+            u'title': u'测是',
+            u'create_userid': 596,
+            u'email': u'wangqiang@optaim.com',
+            u'status': 0,
+            u'basemap': None,
+            u'reqDate': u'2017-12-29 10:21:54',
+            u'compositeImage': None,
+            u'city': u'',
+            u'finDate': None,
+            u'doc': u'测试啦啊啊啊啊阿拉',
+            u'advertiserid': 3833,
+            u'doc1stLine': -1,
+            u'time': u'10:28',
+            u'adType': u'fine_big',
+            u'os': u'android',
+            u'savePath':u'ok.png',
+            u'conf':u'conf/iphone6.conf',
+            u'config':u'conf/wechat_iphone6.conf',
+            u'basemap':'/Volumes/Ads_Group/HuaDong/02A新点位当天素材收集/iPhone/2018.01.17/微信/960-540/IMG_1273.PNG'
+        }
+        autoImg = WechatAutoImgBg(params=params)
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

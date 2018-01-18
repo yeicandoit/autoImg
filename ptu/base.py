@@ -15,8 +15,8 @@ class Base:
     TYPE_ARG = 1
     TYPE_START = 4
 
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ads/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png',
+    def __init__(self, time, battery, img_paste_ad, ad_type='banner',
+                 network='wifi', desc='', doc='', save_path='./ok.png',
                  conf='/Users/iclick/wangqiang/autoImg/conf/H60-L11.conf', background = ''):
         self.cf = ConfigParser.ConfigParser()
         self.cf.read(conf)
@@ -26,17 +26,14 @@ class Base:
         self.time = time
         self.battery = battery
         self.img_paste_ad = img_paste_ad
-        self.img_corner_mark = img_corner_mark
         self.ad_type = ad_type
         self.network = network
         self.desc = desc
         self.doc = doc
-        #TODO drop doc1st_line attribute
-        self.doc1st_line = doc1st_line
-        self.logger.debug("Ad demand is time:%s, battery:%f, img_past_ad:%s, img_corner_mark:%s, "
-                     "ad_type:%s, network:%s, desc:%s, doc:%s, doc1st_line:%s", self.time, self.battery,
-                     self.img_paste_ad, self.img_corner_mark, self.ad_type, self.network,
-                     self.desc, self.doc, self.doc1st_line)
+        self.logger.debug("Ad demand is time:%s, battery:%f, img_past_ad:%s, "
+                     "ad_type:%s, network:%s, desc:%s, doc:%s", self.time, self.battery,
+                     self.img_paste_ad, self.ad_type, self.network,
+                     self.desc, self.doc)
         self.composite_ads_path = save_path
         self.ad_area_path = 'ad_area/'
 

@@ -65,6 +65,8 @@ def pImage(test_data=None):
         demands = test_data
 
     for row in demands:
+        if 'ios' == row['os']:
+            continue
         app = row['app']
         adType = row['adType']
         wcType = row['wcType']
@@ -116,11 +118,6 @@ def pImage(test_data=None):
                 loadImg(row['logo'], logo)
             except:
                 pass
-        if None != row['basemap']:
-            suffix = os.path.splitext(row['basemap'])[1]
-            bg = 'webAutoImg/media/background/' + today + '-bg-' + str(tId) + suffix
-            # urllib.urlretrieve(row['logo'], logo)
-            loadImg(row['basemap'], bg)
 
         subject = u"自动P图"
 
@@ -141,115 +138,66 @@ def pImage(test_data=None):
                 was = dictWebAccount.get(wcType)
                 wa = was[random.randint(0, len(was)-1)].decode('utf-8')
             subject += wa
-            if None == row['basemap']:
-                ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
-                                            title, doc, doc1stLine, savepath)
-            else:
-                if 0 == row['adCornerType']:  # 活动推广
-                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark.png'
-                elif 1 == row['adCornerType']:  # 商品推广
-                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark-1.png'
-                elif 2 == row['adCornerType']:  # 应用下载
-                    adCornerImg = 'ad_area/wechat/iphone6/corner-mark-2.png'
-
-                ai = ptu.wechat.WechatAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                title, doc, doc1stLine, savepath, background=bg)
+            ai = autoImg.WebChatAutoImg(mtime, battery, wa, adImg, adCornerImg, adType, network,
+                                       title, doc, doc1stLine, savepath)
         elif 'QQWeather' == app:
             subject += u"-QQ天气"
-            if None == row['basemap']:
-                adCornerImg = 'ad_area/corner-ad.png'
-                ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
-                                       title, doc, doc1stLine, savepath)
-            else:
-                adCornerImg = 'ad_area/qweather/iphone6/corner-mark.png'
-                ai = ptu.qqweather.QQWeatherBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                title, doc, doc1stLine, savepath, background=bg)
+            adCornerImg = 'ad_area/corner-ad.png'
+            ai = autoImg.QQAutoImg('weather', city, mtime, battery, adImg, adCornerImg, adType, network,
+                                    title, doc, doc1stLine, savepath)
         elif 'QQBrowser' == app:
             subject += u"-QQ浏览器"
-            if None == row['basemap']:
-                ai = ptu.qqbrowser.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.qqbrowser.QQBrowserBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath, background=bg)
+            ai = ptu.qqbrowser.QQBrowserAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                    title, doc, doc1stLine, savepath)
         elif 'QQDongtai' == app:
             subject += u"-QQ空间"
             ai = autoImg.QzoneAutoImg(mtime, battery, adImg, adCornerImg, adType, network, title,
                                    doc, doc1stLine, savepath, logo)
         elif 'qiushi' == app:
             subject += u"-糗事百科"
-            if None == row['basemap']:
-                ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath, logo)
-            else:
-                ai = ptu.qsbk.QSBKAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                         title, doc, doc1stLine, savepath, logo, background=bg)
+            ai = autoImg.QSBKAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                    title, doc, doc1stLine, savepath, logo)
         elif 'shuqi' == app:
             subject += u"-书旗小说"
-            if None == row['basemap']:
-                ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            ai = autoImg.ShuQiAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                      title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.shuqi.ShuqiAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath, background=bg)
         elif 'tianya' == app:
             subject += u"-天涯论坛"
             ai = autoImg.TianyaAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                        title, doc, doc1stLine, savepath)
         elif 'qnews' == app:
             subject += u"-腾讯新闻"
-            if None == row['basemap']:
-                ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                       title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.qnews.QnewsAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                          title, doc, doc1stLine, savepath, background=bg)
+            ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                    title, doc, doc1stLine, savepath)
         elif 'wantu' == app:
             subject += u"-玩图"
-            if None == row['basemap']:
-                ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            ai = ptu.wantu.WantuAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                         title, doc, doc1stLine, savepath, logo)
-            else:
-                ai = ptu.wantu.WantuAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                            title, doc, doc1stLine, savepath, logo, background=bg)
         #TODO have not found related ad
         # elif 'hers' == app:
         #    ai = ptu.hers.HersAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
         #                                title, doc, doc1stLine, savepath, logo)
         elif 'calendar' == app:
             subject += u"-万年历"
-            if None == row['basemap']:
-                ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            ai = ptu.calendar.CalendarAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                       title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.calendar.CalendarAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                  title, doc, doc1stLine, savepath, background=bg)
         elif 'meiyancamera' == app:
             subject += u"-美颜相机"
-            if None == row['basemap']:
-                ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                      title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.meiyancamera.MeiyancameraAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                          title, doc, doc1stLine, savepath, background=bg)
+            ai = ptu.meiyancamera.MeiyancameraAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                                    title, doc, doc1stLine, savepath)
         elif 'batterydoctor' == app:
             subject += u"-金山电池医生"
             ai = ptu.batterydoctor.BatteryDoctorAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                                         title, doc, doc1stLine, savepath)
         elif 'esbook' == app:
             subject += u"-宜搜小说"
-            if None == row['basemap']:
-                ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
-                                                        title, doc, doc1stLine, savepath)
-            else:
-                ai = ptu.esbook.EsbookAutoImgBg(mtime, battery, adImg, adCornerImg, adType, network,
-                                              title, doc, doc1stLine, savepath, background=bg)
+            ai = ptu.esbook.EsbookAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+                                            title, doc, doc1stLine, savepath)
         elif 'jxedt' == app:
             subject += u"-驾校一点通"
             ai = ptu.jxedt.JxedtAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                           title, doc, doc1stLine, savepath)
         else:
-            ai = None
             parameters = {'id': tId, 'status': 2}
             requests.get(urlUpdate, headers=headers, params=parameters)
             if email:

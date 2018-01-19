@@ -12,8 +12,8 @@ from base import Base
 class QQBrowserAutoImg(Base):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', conf='conf/Honor8.conf'):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf)
+        Base.__init__(self, time, battery, img_paste_ad, ad_type, network, desc,
+                         doc, save_path, conf)
 
         self.ad_flag = cv2.imread(self.cf.get('image_path', 'browser_ad'), 0)
         self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.ad_flag)))
@@ -189,8 +189,8 @@ class QQBrowserAutoImg(Base):
 class QQBrowserBg(Base):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background=''):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+        Base.__init__(self, time, battery, img_paste_ad, ad_type, network, desc,
+                         doc, save_path, conf='conf/iphone6.conf', background=background)
         self.config = ConfigParser.ConfigParser()
         self.config.read('/Users/iclick/wangqiang/autoImg/conf/qqbrowser_iphone6.conf')
 

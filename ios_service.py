@@ -17,12 +17,12 @@ urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
 reqTimes= {} #Record times of every ad Ptu request, if times is bigger than 3, drop this ad request.
 
 func_hash = {
-    'wechat':wechat.WechatAutoImgBg,
+    'weixin':wechat.WechatAutoImgBg,
     'qnews':qnews.QnewsAutoImgBg
 }
 
 subject_hash = {
-    'wechat':u"-微信公众号-",
+    'weixin':u"-微信公众号-",
 }
 
 def run_shell(cmd):

@@ -7,14 +7,14 @@ import ConfigParser
 from base import Base
 
 class QQWeatherBg(Base):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background=''):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+    def __init__(self, params):
+        Base.__init__(self, params['time'], params['battery'], params['adImg'], params['adType'], params['network'],
+                      params['title'], params['doc'], params['savePath'], params['conf'], params['basemap'])
 
         self.config = ConfigParser.ConfigParser()
-        self.config.read('/Users/iclick/wangqiang/autoImg/conf/qqweather_iphone6.conf')
+        self.config.read(params['config'])
 
+        self.img_corner_mark = self.config.get('qqweather', 'img_corner_mark')
         self.img_now = cv2.imread(self.config.get('qqweather', 'img_now'), 0)
         self.fp_now = str(imagehash.dhash(Image.fromarray(self.img_now)))
         self.logger.debug("fp_now:%s", self.fp_now)

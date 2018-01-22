@@ -8,7 +8,7 @@ import logging.config
 import hashlib
 import requests
 from util import myEmail, shareImg
-from ptu import wechat, base, qnews
+from ptu import wechat, base, qnews, qqweather
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
@@ -16,13 +16,21 @@ urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
 urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
 reqTimes= {} #Record times of every ad Ptu request, if times is bigger than 3, drop this ad request.
 
-func_hash = {
-    'weixin':wechat.WechatAutoImgBg,
-    'qnews':qnews.QnewsAutoImgBg
-}
-
-subject_hash = {
-    'weixin':u"-微信公众号-",
+info_hash = {
+    'weixin':{
+        'func':wechat.WechatAutoImgBg,
+        'subject':u"-微信公众号-",
+        'config':{
+            'iphone6':'conf/wechat_iphone6.conf',
+        }
+    },
+    'QQWeather':{
+        'func':qqweather.QQWeatherBg,
+        'subject':u'-QQ天气-',
+        'config':{
+            'iphone6':'conf/qqweather_iphone6.conf',
+        },
+    },
 }
 
 def run_shell(cmd):
@@ -52,7 +60,7 @@ def setParams(req):
     params['savePath'] = savepath
     #TODO should consider iphone plus
     params['conf'] = 'conf/iphone6.conf'
-    params['config'] = 'conf/' + req['app'] + '_' + 'iphone6.conf'
+    params['config'] = info_hash[req['app']]['config']['iphone6']
 
     adImgArr = req['adImg'].split(',')
     if len(adImgArr) == 1:
@@ -126,10 +134,10 @@ def pImage(test_data=None):
         else:
             reqTimes[tId] = 1
         subject = u"自动P图"
-        if func_hash.has_key(row['app']) and ok:
-            ai = func_hash[row['app']](params)
-            if subject_hash.has_key(row['app']):
-                subject += subject_hash[row['app']]
+        if info_hash.has_key(row['app']) and ok:
+            ai = info_hash[row['app']]['func'](params)
+            if info_hash.has_key(row['app']):
+                subject += info_hash[row['app']]['subject']
         else:
             parameters = {'id': tId, 'status': 2}
             requests.get(urlUpdate, headers=headers, params=parameters)

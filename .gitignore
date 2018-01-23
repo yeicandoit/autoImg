@@ -13,3 +13,4 @@ ads/*
 log/*
 .idea/*
 tmp_img/*
+.DS_Store

@@ -31,6 +31,13 @@ info_hash = {
             'iphone6':'conf/qqweather_iphone6.conf',
         },
     },
+    'qnews':{
+        'func':qnews.QnewsAutoImgBg,
+        'subject':u'-腾讯新闻客户端-',
+        'config':{
+            'iphone6':'conf/qnews_iphone6.conf',
+        },
+    },
 }
 
 def run_shell(cmd):
@@ -187,4 +194,6 @@ def pImage(test_data=None):
 
 
 if __name__ == '__main__':
-    pImage()
+    while 1:
+        pImage()
+        time.sleep(3)

@@ -35,13 +35,12 @@ class QnewsAutoImg(Base):
         self.driver.quit()
 
 class QnewsAutoImgBg(Base):
-    def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
-                 network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background=''):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+    def __init__(self, params):
+        Base.__init__(self, params['time'], params['battery'], params['adImg'], params['adType'], params['network'],
+                      params['title'], params['doc'], params['savePath'], params['conf'], params['basemap'])
 
         self.config = ConfigParser.ConfigParser()
-        self.config.read('/Users/iclick/wangqiang/autoImg/conf/qnews_iphone6.conf')
+        self.config.read(params['config'])
         if 'feeds_banner' != self.ad_type:
             self.img_split = cv2.imread(self.config.get('Qnews', 'img_feeds_split'), 0)
         else:
@@ -50,9 +49,9 @@ class QnewsAutoImgBg(Base):
         self.fp_split = str(imagehash.dhash(Image.fromarray(self.img_split)))
         self.logger.debug("fp_split:%s", self.fp_split)
 
-        if '10' == self.img_corner_mark:
+        if '10' == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom'
-        elif '11' == self.img_corner_mark:
+        elif '11' == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom_1'
 
     def assembleFeedsBigAd(self):

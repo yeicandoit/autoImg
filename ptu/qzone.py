@@ -10,8 +10,8 @@ class QzoneBg(Base):
     def __init__(self, time, battery, img_paste_ad, img_corner_mark='ad_area/corner-mark.png', ad_type='banner',
                  network='wifi', desc='', doc='', doc1st_line=15, save_path='./ok.png', logo='', background='',
                  stars=0.0):
-        Base.__init__(self, time, battery, img_paste_ad, img_corner_mark, ad_type, network, desc,
-                         doc, doc1st_line, save_path, conf='conf/iphone6.conf', background=background)
+        Base.__init__(self, time, battery, img_paste_ad, ad_type, network, desc,
+                         doc, save_path, conf='conf/iphone6.conf', background=background)
         self.config = ConfigParser.ConfigParser()
         self.config.read('/Users/iclick/wangqiang/autoImg/conf/qzone_iphone6.conf')
 

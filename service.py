@@ -11,6 +11,7 @@ import subprocess
 from util import myEmail
 import autoImg
 import ptu
+from ptu import qnews
 
 logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
@@ -167,7 +168,7 @@ def pImage(test_data=None):
                                        title, doc, doc1stLine, savepath)
         elif 'qnews' == app:
             subject += u"-腾讯新闻"
-            ai = autoImg.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
+            ai = qnews.QnewsAutoImg(mtime, battery, adImg, adCornerImg, adType, network,
                                     title, doc, doc1stLine, savepath)
         elif 'wantu' == app:
             subject += u"-玩图"

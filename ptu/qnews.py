@@ -68,16 +68,19 @@ class QnewsAutoImg(Base):
             bkg = cv2.resize(blank, (self.screen_width, blank_height))
 
         # Add bottom
-        _, bottom_height = self.getImgWH(self.config.get('Qnews', 'img_ad_area_bottom'))
+        _, bottom_height = self.getImgWH(self.config.get('Qnews', 'img_feeds_big_bottom'))
         bkg[blank_height - bottom_height:blank_height, 0:self.screen_width] \
-            = cv2.imread(self.config.get('Qnews', 'img_ad_area_bottom'))
+            = cv2.imread(self.config.get('Qnews', 'img_feeds_big_bottom'))
 
         # Add ad
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_width, ad_height))
+        cv2.imwrite('tmp_img/tmp.png', ad)
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
         ad_top_y = blank_height - bottom_height - ad_height
         ad_left_x = (self.screen_width - ad_width) / 2
-        bkg[ad_top_y:ad_top_y + ad_height, ad_left_x:ad_left_x + ad_width] = ad
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_left_x, ad_top_y),
+                                 (ad_left_x + ad_width, ad_top_y + ad_height))
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
@@ -109,7 +112,11 @@ class QnewsAutoImg(Base):
         # Add ad
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_width, ad_height))
-        bkg[ad_top_y:ad_top_y + ad_height, ad_left_x:ad_left_x + ad_width] = ad
+        cv2.imwrite('tmp_img/tmp.png', ad)
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_left_x, ad_top_y),
+                                 (ad_left_x + ad_width, ad_top_y + ad_height))
+
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
@@ -139,9 +146,9 @@ class QnewsAutoImg(Base):
             bkg = cv2.resize(blank, (self.screen_width, blank_height))
 
         # Add bottom
-        _, bottom_height = self.getImgWH(self.config.get('Qnews', 'img_ad_area_bottom'))
+        _, bottom_height = self.getImgWH(self.config.get('Qnews', 'img_feeds_multi_bottom'))
         bkg[blank_height - bottom_height:blank_height, 0:self.screen_width] \
-            = cv2.imread(self.config.get('Qnews', 'img_ad_area_bottom'))
+            = cv2.imread(self.config.get('Qnews', 'img_feeds_multi_bottom'))
 
         # Add ad
         img_ads = self.img_paste_ad.split(',')
@@ -149,14 +156,20 @@ class QnewsAutoImg(Base):
         ad_top_y = blank_height - bottom_height - ad_height
         ad_left_x = (self.screen_width - ad_width) / 2
         ad_space_between = (ad_width - 3 * one_ad_width) / 2
-        bkg[ad_top_y:ad_top_y + ad_height, ad_left_x:ad_left_x + one_ad_width] \
-            = cv2.resize(cv2.imread(img_ads[0]), (one_ad_width, ad_height))
-        bkg[ad_top_y:ad_top_y + ad_height,
-        ad_left_x + one_ad_width + ad_space_between:ad_left_x + 2 * one_ad_width + ad_space_between] \
-            = cv2.resize(cv2.imread(img_ads[1]), (one_ad_width, ad_height))
-        bkg[ad_top_y:ad_top_y + ad_height,
-        ad_left_x + 2 * one_ad_width + 2 * ad_space_between:ad_left_x + 3 * one_ad_width + 2 * ad_space_between] \
-            = cv2.resize(cv2.imread(img_ads[2]), (one_ad_width, ad_height))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[0]), (one_ad_width, ad_height)))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_left_x, ad_top_y),
+                                 (ad_left_x + one_ad_width, ad_top_y + ad_height))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[1]), (one_ad_width, ad_height)))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED),
+                                 (ad_left_x + one_ad_width + ad_space_between, ad_top_y),
+                                 (ad_left_x + 2 * one_ad_width + ad_space_between, ad_top_y + ad_height))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[2]), (one_ad_width, ad_height)))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED),
+                                 (ad_left_x + 2 * one_ad_width + 2 * ad_space_between, ad_top_y),
+                                 (ad_left_x + 3 * one_ad_width + 2 * ad_space_between, ad_top_y + ad_height))
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg

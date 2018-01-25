@@ -306,6 +306,9 @@ class QnewsAutoImg(Base):
 
 
 class QnewsAutoImgBg(Base):
+    NORMAL = 'NORMAL'
+    DOWNLOAD = 'DOWNLOAD'
+
     def __init__(self, params):
         Base.__init__(self, params['time'], params['battery'], params['adImg'], params['adType'], params['network'],
                       params['title'], params['doc'], params['savePath'], params['conf'], params['basemap'])
@@ -322,16 +325,24 @@ class QnewsAutoImgBg(Base):
 
         if '10' == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom'
+            self.adCornerType = QnewsAutoImgBg.NORMAL
         elif '11' == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom_1'
+            self.adCornerType = QnewsAutoImgBg.DOWNLOAD
 
     def assembleFeedsBigAd(self):
         blank_height = self.config.getint('Qnews', 'feeds_big_blank_height')
         ad_size = self.parseArrStr(self.config.get('Qnews', 'feeds_big_ad_size'), ',')
         word_height = self.config.getint('Qnews', 'word_height')
         blank = cv2.imread(self.config.get('Qnews', 'img_blank'))
+        font = self.config.get('Qnews', 'font')
+        doc_size = self.config.getint('Qnews', 'doc_size')
+        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_big_doc_pos'), ',')
 
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'Qnews',self.config)
+        check_pos = (self.screen_width + ad_size[0]) / 2
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, doc_size, (doc_pos[0], 0), check_pos)
+
         # set ad backgroud
         if len(self.doc) <= doc_1stline_max_len:
             bkg = cv2.resize(blank, (self.screen_width, blank_height))
@@ -347,19 +358,18 @@ class QnewsAutoImgBg(Base):
         # Add ad
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_size[0], ad_size[1]))
+        cv2.imwrite('tmp_img/tmp.png', ad)
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
         ad_top_y = blank_height - bottom_height - ad_size[1]
         ad_left_x = (self.screen_width - ad_size[0]) / 2
-        bkg[ad_top_y:ad_top_y + ad_size[1], ad_left_x:ad_left_x + ad_size[0]] = ad
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_left_x, ad_top_y),
+                                 (ad_left_x + ad_size[0], ad_top_y + ad_size[1]))
+        
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
-        font = self.config.get('Qnews', 'font')
-        doc_size = self.config.getint('Qnews', 'doc_size')
-        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
-        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_big_doc_pos'), ',')
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'Qnews', self.config)
         return self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
-                             word_height)
+                             word_height), blank_height
 
     def assembleFeedsSmallAd(self):
         blank_height = self.config.getint('Qnews', 'feeds_small_blank_height')
@@ -367,6 +377,13 @@ class QnewsAutoImgBg(Base):
         ad_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_small_ad_pos'), ',')
         word_height = self.config.getint('Qnews', 'word_height')
         blank = cv2.imread(self.config.get('Qnews', 'img_blank'))
+        font = self.config.get('Qnews', 'font')
+        doc_size = self.config.getint('Qnews', 'doc_size')
+        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_small_doc_pos'), ',')
+
+        check_pos = self.config.getint('Qnews', 'feeds_small_doc_1stline_check_x')
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, doc_size, (doc_pos[0], 0), check_pos)
 
         bkg = cv2.resize(blank, (self.screen_width, blank_height))
 
@@ -378,26 +395,35 @@ class QnewsAutoImgBg(Base):
         # Add ad
         ad = cv2.imread(self.img_paste_ad)
         ad = cv2.resize(ad, (ad_size[0], ad_size[1]))
-        bkg[ad_pos[1]:ad_pos[1] + ad_size[1], ad_pos[0]:ad_pos[0] + ad_size[0]] = ad
+        cv2.imwrite('tmp_img/tmp.png', ad)
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_pos[0], ad_pos[1]),
+                                 (ad_pos[0]+ ad_size[0], ad_pos[1]+ ad_size[1]))
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
-        font = self.config.get('Qnews', 'font')
-        doc_size = self.config.getint('Qnews', 'doc_size')
-        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
-        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_small_doc_pos'), ',')
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'Qnews', self.config, d1len='feeds_small_doc_1stline_px_len')
         return self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
-                             word_height)
+                             word_height), blank_height
 
     def assembleFeedsMultiAd(self):
-        blank_height = self.config.getint('Qnews', 'feeds_multi_blank_height')
-        ad_size = self.parseArrStr(self.config.get('Qnews', 'feeds_multi_ad_size'), ',')
+        sec_blank_height = 'feeds_multi_blank_height'
+        sec_ad_size = 'feeds_multi_ad_size'
+        if QnewsAutoImgBg.DOWNLOAD == self.adCornerType:
+            sec_blank_height = 'feeds_multi_blank_height_1'
+            sec_ad_size = 'feeds_multi_ad_size_1'
+        blank_height = self.config.getint('Qnews', sec_blank_height)
+        ad_size = self.parseArrStr(self.config.get('Qnews', sec_ad_size), ',')
         multi_ad_width = self.config.getint('Qnews', 'feeds_multi_ad_width')
         word_height = self.config.getint('Qnews', 'word_height')
         blank = cv2.imread(self.config.get('Qnews', 'img_blank'))
+        font = self.config.get('Qnews', 'font')
+        doc_size = self.config.getint('Qnews', 'doc_size')
+        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
+        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_multi_doc_pos'), ',')
 
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'Qnews', self.config)
+        check_pos = (self.screen_width + multi_ad_width) / 2
+        doc_1stline_max_len = self.find1stDoclen(font, self.doc, doc_size, (doc_pos[0], 0), check_pos)
+
         # set ad backgroud
         if len(self.doc) <= doc_1stline_max_len:
             bkg = cv2.resize(blank, (self.screen_width, blank_height))
@@ -416,49 +442,45 @@ class QnewsAutoImgBg(Base):
         ad_top_y = blank_height - bottom_height - ad_size[1]
         ad_left_x = (self.screen_width - multi_ad_width) / 2
         ad_space_between = (multi_ad_width - 3 * ad_size[0]) / 2
-        for i in range(0, len(img_ads)):
-            bkg[ad_top_y:ad_top_y + ad_size[1], ad_left_x:ad_left_x + ad_size[0]] \
-                = cv2.resize(cv2.imread(img_ads[i]), (ad_size[0], ad_size[1]))
-            ad_left_x += ad_size[0]+ad_space_between
+
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[0]), (ad_size[0], ad_size[1])))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED), (ad_left_x, ad_top_y),
+                                 (ad_left_x + ad_size[0], ad_top_y + ad_size[1]))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[1]), (ad_size[0], ad_size[1])))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED),
+                                 (ad_left_x + ad_size[0] + ad_space_between, ad_top_y),
+                                 (ad_left_x + 2 * ad_size[0] + ad_space_between, ad_top_y + ad_size[1]))
+        cv2.imwrite('tmp_img/tmp.png', cv2.resize(cv2.imread(img_ads[2]), (ad_size[0], ad_size[1])))
+        ad_corder_path = self.circle_corder_image('tmp_img/tmp.png', 5)
+        bkg = self.warterMarkPos(bkg, cv2.imread(ad_corder_path, cv2.IMREAD_UNCHANGED),
+                                 (ad_left_x + 2 * ad_size[0] + 2 * ad_space_between, ad_top_y),
+                                 (ad_left_x + 3 * ad_size[0] + 2 * ad_space_between, ad_top_y + ad_size[1]))
         cv2.imwrite('tmp_img/tmp.png', bkg)
 
         # Print doc and desc in the bkg
-        font = self.config.get('Qnews', 'font')
-        doc_size = self.config.getint('Qnews', 'doc_size')
-        doc_color = self.parseArrStr(self.config.get('Qnews', 'doc_color'), ',')
-        doc_pos = self.parseArrStr(self.config.get('Qnews', 'feeds_multi_doc_pos'), ',')
-        doc_1stline_max_len = self.set1stDocLength(self.doc, 'Qnews', self.config)
         return self.drawText('tmp_img/tmp.png', font, self.doc, doc_size, doc_color, doc_pos, doc_1stline_max_len,
-                             word_height)
+                             word_height), blank_height
 
     def assembleFeedsAd(self):
         if "feeds_big" == self.ad_type:
-            ad = self.assembleFeedsBigAd()
+            ad, bh = self.assembleFeedsBigAd()
         elif "feeds_small" == self.ad_type:
-            ad = self.assembleFeedsSmallAd()
+            ad, bh = self.assembleFeedsSmallAd()
         elif "feeds_multi" == self.ad_type:
-            ad = self.assembleFeedsMultiAd()
+            ad, bh = self.assembleFeedsMultiAd()
         else:
             ad = None
-        return ad
-
-
-    def getFeedsBlankHeight(self):
-        key = self.ad_type + "_blank_height"
-        blank_height = self.config.getint('Qnews', key)
-        if len(self.doc) > self.set1stDocLength(self.doc, 'Qnews', self.config) and "feeds_small" != self.ad_type:
-            blank_height = blank_height + self.config.getint('Qnews', 'word_height')
-
-        return blank_height
-
+            bh = 0
+        return ad, bh
 
     def feedsStart(self):
-        blank_height = self.getFeedsBlankHeight()
+        ad, blank_height = self.assembleFeedsAd()
         bottom_height = self.config.getint('Qnews', 'feeds_bottom_height')
         # The ad area should be >= the biggest feeds ad height(its doc is two line) and app bottom
         top_left, bottom_right = self.findFeedsAreaInBg(self.background, self.img_split, self.fp_split, blank_height,
                                                         bottom_height)
-        ad = self.assembleFeedsAd()
 
         img_color = cv2.imread(self.background)
         bottom_y = self.screen_height - bottom_height
@@ -468,7 +490,7 @@ class QnewsAutoImgBg(Base):
         img_color[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
 
         #Add header image
-        ok, img_color = self.updateHeader(img_color, "", self.time, self.battery, self.network, self.config, 'header')
+        #ok, img_color = self.updateHeader(img_color, "", self.time, self.battery, self.network, self.config, 'header')
 
         cv2.imwrite(self.composite_ads_path, img_color)
 

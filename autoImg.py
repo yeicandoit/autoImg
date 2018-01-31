@@ -1285,13 +1285,13 @@ class ShuQiAutoImg(AutoImg):
         el = self.driver.find_element_by_name(u"免费").click()
         self.driver.implicitly_wait(10)
         sleep(10)
-        x_rand = random.randint(0, self.cf.getint("ShuQi", "x_num"))
-        y_rand = random.randint(0, self.cf.getint("ShuQi", "y_num"))
-        x_pos = self.cf.getint("ShuQi", "book_x") + x_rand * self.cf.getint("ShuQi", "book_right_dist")
-        y_pos = self.cf.getint("ShuQi", "book_y") + y_rand * self.cf.getint("ShuQi", "book_bottom_dist")
+        #x_rand = random.randint(0, self.cf.getint("ShuQi", "x_num"))
+        #y_rand = random.randint(0, self.cf.getint("ShuQi", "y_num"))
+        #x_pos = self.cf.getint("ShuQi", "book_x") + x_rand * self.cf.getint("ShuQi", "book_right_dist")
+        #y_pos = self.cf.getint("ShuQi", "book_y") + y_rand * self.cf.getint("ShuQi", "book_bottom_dist")
 
         action = TouchAction(self.driver)
-        action.tap(el, x_pos, y_pos).perform()
+        action.tap(el, 100, 500).perform()
         sleep(5)
 
         try:

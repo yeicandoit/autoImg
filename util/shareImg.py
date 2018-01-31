@@ -11,7 +11,7 @@ logger = logging.getLogger('main')
 path_hash = {
     'weixin_banner':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/582-166",
     'weixin_image_text':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/114-114",
-    'winxin_fine_big':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/960-540",
+    'weixin_fine_big':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/960-540",
     'QQWeather':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/QQ天气/582-166",
     'qnews_feeds_big':u'/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/腾讯新闻/大图',
     'qnews_feeds_small':u'/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/腾讯新闻/小图',
@@ -27,7 +27,7 @@ def getImage(app, adtype = None):
         return None
 
     # get image from directory today or 4days before
-    for i in range(5):
+    for i in range(30):
         path = path_hash[path_key] % time.strftime('%Y.%m.%d', time.localtime(time.time() - i*24*60*60))
         if not os.path.exists(path):
             logger.warning("path does not exist:%s", path)

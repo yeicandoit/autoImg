@@ -104,9 +104,9 @@ def setParams(req):
         params['basemap'] = shareImg.getImage(req['app'], req['adType'])
         if None == params['basemap']:
             ok = False
-            logger.warning('No basemap for request:%s', json.dumps(params))
+            logger.warning('No basemap for this request')
 
-    logger.debug("params is %s", json.dumps(params))
+    logger.info("params is %s", json.dumps(params))
 
     return params, ok
 
@@ -181,11 +181,11 @@ def pImage(test_data=None):
             myEmail.send_email('wangqiang@optaim.com', content, subject=subject)
             logger.warn("Failed to composite image:" + content)
             #If parameters err or has failed 3 times for this ad Ptu request
-            if (reqTimes.has_key(tId) and reqTimes[tId] >= 3) or base.Base.TYPE_ARG == mType:
+            if (reqTimes.has_key(tId) and reqTimes[tId] >= 8) or base.Base.TYPE_ARG == mType:
                 parameters = {'id': tId, 'status': 2}
                 requests.get(urlUpdate, headers=headers, params=parameters)
                 if reqTimes.has_key(tId):
-                    if reqTimes[tId] >= 3:
+                    if reqTimes[tId] >= 8:
                         msg = u'您的P图请求没有完成，若是微信公众号P图请求并指定了公众号，请更换其他公众号试试；其他P图请求失败，请' \
                               u'联系相关负责人！'
                     del reqTimes[tId]
@@ -196,4 +196,4 @@ def pImage(test_data=None):
 if __name__ == '__main__':
     while 1:
         pImage()
-        time.sleep(3)
+        time.sleep(1)

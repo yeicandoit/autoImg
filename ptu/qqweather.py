@@ -36,7 +36,7 @@ class QQWeatherBg(Base):
         img_color = cv2.imread(self.background)
         img_color[ad_top_left_y:ad_top_left_y+ad_height, ad_top_left_x:ad_top_left_x + ad_width] = ad
 
-        img_header_path = self.cf.get('header', 'img_header')
+        img_header_path = self.config.get('qqweather', 'img_header')
         _, img_color = self.updateHeader(img_color, img_header_path, self.time, self.battery, self.network, self.cf,
                                          'header')
         cv2.imwrite(self.composite_ads_path, img_color)

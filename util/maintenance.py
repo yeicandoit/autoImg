@@ -7,7 +7,7 @@ import json
 
 urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
 urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
-urlBasemap = "http://mtest.optaim.com/api/picture/updatebasemap"
+urlBasemap = "http://dsp.optaim.com/api/picture/updatebasemap"
 
 def getHeaders():
     timestamp = str(int(time.time()))
@@ -34,8 +34,12 @@ def updateBasemap(arr):
 
 if __name__ == '__main__':
     #updatePtu(10, 1)
-    arr = [{'os':'ios', 'app':'weixin', 'adType':'banner'},
-           {'os': 'ios', 'app': 'weixin', 'adType': 'image_text'}]
+    arr = [
+        {'os': 'ios', 'app': 'weixin', 'adType': 'banner'},
+        {'os': 'ios', 'app': 'weixin', 'adType': 'image_text'},
+        {'os': 'ios', 'app': 'weixin', 'adType': 'fine_big'},
+        {'os': 'ios', 'app': 'QQWeather', 'adType': ''},
+    ]
     updateBasemap(arr)
 
 

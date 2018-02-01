@@ -321,6 +321,8 @@ class QnewsAutoImgBg(Base):
             self.img_split = cv2.imread(self.config.get('Qnews', 'img_banner_split'), 0)
 
         self.fp_split = str(imagehash.dhash(Image.fromarray(self.img_split)))
+        self.img_ad_flag = cv2.imread(self.config.get('Qnews', 'img_ad_flag'), 0)
+        self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.img_ad_flag)))
         self.logger.debug("fp_split:%s", self.fp_split)
 
         if '10' == params['adCornerType']:
@@ -476,18 +478,41 @@ class QnewsAutoImgBg(Base):
         return ad, bh
 
     def feedsStart(self):
+        img_color = cv2.imread(self.background)
         ad, blank_height = self.assembleFeedsAd()
         bottom_height = self.config.getint('Qnews', 'feeds_bottom_height')
-        # The ad area should be >= the biggest feeds ad height(its doc is two line) and app bottom
-        top_left, bottom_right = self.findFeedsAreaInBg(self.background, self.img_split, self.fp_split, blank_height,
-                                                        bottom_height)
 
-        img_color = cv2.imread(self.background)
-        bottom_y = self.screen_height - bottom_height
-        ad_bottom_height = bottom_y - bottom_right[1] - blank_height
-        img_color[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
-            img_color[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
-        img_color[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
+        found_ad_flag, tl, br = self.findMatchedArea(cv2.imread(self.background,0), self.img_ad_flag, self.fp_ad_flag)
+        if found_ad_flag:
+            ok, top, bottom = self.findFeedsBoundary(self.background, tl, self.img_split, self.fp_split, blank_height)
+            assert ok, 'Could not P ad into this background'
+
+            height_found = bottom - top
+            self.logger.info("blank_height:%d, bottom-top:%d", blank_height, height_found)
+            assert self.screen_height - top >= blank_height + bottom_height
+            if blank_height >= height_found:
+                down_len = blank_height - (height_found)
+                bottom_y = self.screen_height - bottom_height
+                ad_bottom_height = bottom_y - bottom - down_len
+                img_color[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
+                    img_color[bottom:bottom + ad_bottom_height, 0:self.screen_width]
+                img_color[top:top + blank_height, 0:self.screen_width] = ad
+            elif height_found - blank_height < 3:
+                img_color[top:bottom, 0:self.screen_width] = cv2.resize(cv2.imread(self.cf.get('common', 'img_blank')),
+                                                                        (self.screen_width, height_found))
+                img_color[top:top+blank_height, 0:self.screen_width] = ad
+            else:
+                assert 0, 'Found feeds area is bigger than demand area'
+
+        else:
+            # The ad area should be >= the biggest feeds ad height(its doc is two line) and app bottom
+            top_left, bottom_right = self.findFeedsAreaInBg(self.background, self.img_split, self.fp_split, blank_height,
+                                                            bottom_height)
+            bottom_y = self.screen_height - bottom_height
+            ad_bottom_height = bottom_y - bottom_right[1] - blank_height
+            img_color[bottom_y - ad_bottom_height: bottom_y, 0:self.screen_width] = \
+                img_color[bottom_right[1]:bottom_right[1] + ad_bottom_height, 0:self.screen_width]
+            img_color[bottom_right[1]:bottom_right[1] + blank_height, 0:self.screen_width] = ad
 
         #Add header image
         #ok, img_color = self.updateHeader(img_color, "", self.time, self.battery, self.network, self.config, 'header')
@@ -525,27 +550,8 @@ class QnewsAutoImgBg(Base):
 
 if __name__ == '__main__':
     try:
-        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg', '10', 'feeds_big', '4G',
-        #                       u'吉利新帝豪', u'17岁被TVB力捧红，两段恋情一段婚姻皆失败，儿子成骄傲', logo='ads/logo.jpg',
-        #                        u'吉利新帝豪', u'长城守护我们，我们守护长城', logo='ads/logo.jpg',
-        #                        u'吉利新帝豪', u'她和胡歌分手，却因为粘孙红雷爆红，如今身价千万豪车出行！', logo='ads/logo.jpg',
-        #                         background = 'ads/qnews_bg.png')
-        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg,ads/feeds1000x560.jpg,ads/feeds1000x560.jpg', '10', 'feeds_multi', '4G',
-        #                         u'吉利新帝豪', u'专业管道疏通，半小时到达', logo='ads/logo.jpg', background='ads/qnews_bg.png')
-        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg',
-        #                         '10', 'feeds_small', '4G',
-        #                         u'吉利新帝豪', u'奥迪Q5这个外观有看头还降价达19.85万', logo='ads/logo.jpg',
-        #                         background='ads/qnews_bg.png')
-        #autoImg = QnewsAutoImgBg('09:46', 0.9, 'ads/feeds1000x560.jpg',
-        #                         '10', 'feeds_banner', '4G',
-        #                         u'吉利新帝豪', u'用身份证号就能查出个人信用，你查了吗？', logo='ads/logo.jpg',
-        #                         background='ads/qnew_banner_bg.jpg')
         autoImg = QnewsAutoImg('11:49', 0.8, 'ads/640x330.jpg', 'ad_area/corner-ad.png',
                                'feeds_banner', '4G', u'吉利新帝豪', u'饼子还能这么吃，秒杀鸡蛋灌饼，完爆煎饼果子，做法还超级简单！')
-        #autoImg = QnewsAutoImg('11:49', 0.8, 'ads/230x160.jpg,ads/230x160.jpg,ads/230x160.jpg', 'ad_area/corner-ad.png',
-        #                       'feeds_multi', '4G', u'吉利新帝豪', u'上海浦东即将举办大型家具展，入场门票免费领')
-
-
         autoImg.compositeImage()
     except Exception as e:
         traceback.print_exc()

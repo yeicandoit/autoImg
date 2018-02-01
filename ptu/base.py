@@ -485,7 +485,6 @@ class Base:
     def findFeedsAreaInBg(self, img_bg, split, fp_split, blank_height, bottom_height = 3, is_bottom = True):
         """ insert one ad between the two news.
         """
-        #try:
         img = cv2.imread(img_bg, 0)
         ok, top_left, bottom_right = self.findMatchedArea(img, split, fp_split)
 
@@ -512,6 +511,30 @@ class Base:
         cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 1)
         cv2.imwrite('tmp_img/debug.png', img)
         return top_left, bottom_right
+
+    def findFeedsBoundary(self, img_bg, flag_pos, split, fp_split, blank_height):
+        ok = False
+        top = 0
+        bottom = 0
+        img = cv2.imread(img_bg, 0)
+
+        img_top = img[flag_pos[1]-blank_height:flag_pos[1], 0:self.screen_width]
+        top_ok, tl, tr = self.findMatchedArea(img_top, split, fp_split)
+        top = flag_pos[1] - blank_height + tr[1]
+        cv2.rectangle(img_top, tl, tr, (0, 0, 0), 1)
+        cv2.imwrite('tmp_img/debug_qnews_top.png', img_top)
+
+        len_d = blank_height - (flag_pos[1] - top) + 3 #3 is used to avoid error
+        img_bottom = img[flag_pos[1]:flag_pos[1]+len_d, 0:self.screen_width]
+        bottom_ok, bl, br = self.findMatchedArea(img_bottom, split, fp_split)
+        bottom = flag_pos[1] + bl[1]
+        cv2.rectangle(img_bottom, bl, br, (0,0,0), 1)
+        cv2.imwrite('tmp_img/debug_qnews_bottom.png', img_bottom)
+
+        if top_ok and bottom_ok:
+            ok = True
+
+        return ok, top, bottom
 
     def getImgWH(self, img):
         img_gray = cv2.imread(img, 0)

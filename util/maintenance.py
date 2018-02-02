@@ -39,6 +39,9 @@ if __name__ == '__main__':
         {'os': 'ios', 'app': 'weixin', 'adType': 'image_text'},
         {'os': 'ios', 'app': 'weixin', 'adType': 'fine_big'},
         {'os': 'ios', 'app': 'QQWeather', 'adType': ''},
+        {'os': 'ios', 'app': 'qnews', 'adType': 'feeds_big'},
+        {'os': 'ios', 'app': 'qnews', 'adType': 'feeds_small'},
+        {'os': 'ios', 'app': 'qnews', 'adType': 'feeds_multi'},
     ]
     updateBasemap(arr)
 

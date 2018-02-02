@@ -3,6 +3,7 @@ import os
 import datetime
 import time
 import json
+import traceback
 import logging
 import logging.config
 import hashlib
@@ -195,5 +196,8 @@ def pImage(test_data=None):
 
 if __name__ == '__main__':
     while 1:
-        pImage()
-        time.sleep(1)
+        try:
+            pImage()
+            time.sleep(1)
+        except:
+            logger.error(traceback.format_exc())

@@ -325,10 +325,10 @@ class QnewsAutoImgBg(Base):
         self.fp_ad_flag = str(imagehash.dhash(Image.fromarray(self.img_ad_flag)))
         self.logger.debug("fp_split:%s", self.fp_split)
 
-        if '10' == params['adCornerType']:
+        if 10 == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom'
             self.adCornerType = QnewsAutoImgBg.NORMAL
-        elif '11' == params['adCornerType']:
+        elif 11 == params['adCornerType']:
             self.ad_area_bottom = 'img_' + self.ad_type + '_area_bottom_1'
             self.adCornerType = QnewsAutoImgBg.DOWNLOAD
 

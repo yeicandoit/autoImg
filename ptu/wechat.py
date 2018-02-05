@@ -17,13 +17,15 @@ class WechatAutoImgBg(Base):
         self.img_corner_mark = self.config.get('wechat', "img_corner_mark_" + str(params['adCornerType']))
         self.img_top = cv2.imread(self.config.get('wechat', 'img_top'), 0)
         self.img_tousu = cv2.imread(self.config.get('wechat', 'img_tousu'), 0)
+        self.img_tousu_1 = cv2.imread(self.config.get('wechat', 'img_tousu_1'), 0)
         self.img_good_message = cv2.imread(self.config.get('wechat', 'img_good_message'), 0)
         self.img_write_message = cv2.imread(self.config.get('wechat', 'img_write_message'), 0)
         self.fp_tousu = str(imagehash.dhash(Image.fromarray(self.img_tousu)))
+        self.fp_tousu_1 = str(imagehash.dhash(Image.fromarray(self.img_tousu_1)))
         self.fp_good_message = str(imagehash.dhash(Image.fromarray(self.img_good_message)))
         self.fp_write_message = str(imagehash.dhash(Image.fromarray(self.img_write_message)))
-        self.logger.debug("fp_tousu:%s, fp_good_message:%s, fp_write_message:%s", self.fp_tousu, self.fp_good_message,
-                          self.fp_write_message)
+        self.logger.debug("fp_tousu:%s, fp_tousu_1:%s, fp_good_message:%s, fp_write_message:%s", self.fp_tousu,
+                          self.fp_tousu_1, self.fp_good_message, self.fp_write_message)
         if "image_text" != self.ad_type:
             self.img_ad_message = self.config.get('wechat', 'img_ad_message')
         else:
@@ -40,6 +42,14 @@ class WechatAutoImgBg(Base):
         fp = str(imagehash.dhash(Image.fromarray(crop)))
         self.logger.debug("Found img_tousu_message hash is:" + fp)
         is_top = self.hammingDistOK(fp, self.fp_tousu)
+
+        #Consider that some img_tousu is smaller than existed
+        if False == is_top:
+            crop, top_left, bottom_right = self.findMatched(img, self.img_tousu_1)
+            fp = str(imagehash.dhash(Image.fromarray(crop)))
+            self.logger.debug("Found img_tousu_message hash is:%s", fp)
+            is_top = self.hammingDistOK(fp, self.fp_tousu_1)
+
         return is_top, top_left, bottom_right
 
     def findAdAreaBottom(self, img):
@@ -114,7 +124,7 @@ class WechatAutoImgBg(Base):
         elif ad_bottom_type == self.WRITE_MESSAGE:
             wanted_height += self.config.getint('wechat', 'distance_write_message')
         elif self.NONE == ad_bottom_type:
-            wanted_height += self.config.getint('wechat', 'distance_bottom')
+            wanted_height += self.config.getint('wechat', 'distance_bottom' + '_' + self.ad_type)
 
         # ad area is bigger than wanted, should shrink
         # ad area is bigger than wanted, but there is no message block, paste ad directly

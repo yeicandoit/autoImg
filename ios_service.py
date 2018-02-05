@@ -17,26 +17,41 @@ urlDemand = "http://dsp.optaim.com/api/picture/getautoimagedemand"
 urlUpdate = "http://dsp.optaim.com/api/picture/updatestatus"
 reqTimes= {} #Record times of every ad Ptu request, if times is bigger than 3, drop this ad request.
 
+IPHONE = 1
+IPHONE_PLUS = 2
+
+phone_type_hash = {
+    IPHONE: 'iPhone',
+    IPHONE_PLUS: 'iPhone plus',
+}
+
 info_hash = {
+    'common':{
+        'config':{
+            IPHONE: 'conf/iphone6.conf',
+            IPHONE_PLUS: 'conf/iphone-plus.conf'
+        }
+    },
     'weixin':{
         'func':wechat.WechatAutoImgBg,
         'subject':u"-微信公众号-",
         'config':{
-            'iphone6':'conf/wechat_iphone6.conf',
+            IPHONE:'conf/wechat_iphone6.conf',
+            IPHONE_PLUS:'conf/wechat_iphone-plus.conf',
         }
     },
     'QQWeather':{
         'func':qqweather.QQWeatherBg,
         'subject':u'-QQ天气-',
         'config':{
-            'iphone6':'conf/qqweather_iphone6.conf',
+            IPHONE:'conf/qqweather_iphone6.conf',
         },
     },
     'qnews':{
         'func':qnews.QnewsAutoImgBg,
         'subject':u'-腾讯新闻客户端-',
         'config':{
-            'iphone6':'conf/qnews_iphone6.conf',
+            IPHONE:'conf/qnews_iphone6.conf',
         },
     },
 }
@@ -66,9 +81,6 @@ def setParams(req):
     params['city'] = req['city']
     savepath = 'webAutoImg/media/composite/' + today + '-' + str(tId) + '.png'
     params['savePath'] = savepath
-    #TODO should consider iphone plus
-    params['conf'] = 'conf/iphone6.conf'
-    params['config'] = info_hash[req['app']]['config']['iphone6']
 
     adImgArr = req['adImg'].split(',')
     if len(adImgArr) == 1:
@@ -100,9 +112,19 @@ def setParams(req):
         suffix = os.path.splitext(req['basemap'])[1]
         params['basemap'] = 'webAutoImg/media/background/' + today + '-bg-' + str(tId) + suffix
         # urllib.urlretrieve(row['logo'], logo)
-        loadImg(req['basemap'], params['basemap'])
+        params['basemap'] = req['basemap']
+        #loadImg(req['basemap'], params['basemap'])
+        w,h = base.Base.getImgWH(params['basemap'])
+        if 750 == w and 1334 == h:  #iphone size
+            params['conf'] = info_hash['common']['config'][IPHONE]
+            params['config'] = info_hash[req['app']]['config'][IPHONE]
+        else: #iphone-plus size
+            params['conf'] = info_hash['common']['config'][IPHONE_PLUS]
+            params['config'] = info_hash[req['app']]['config'][IPHONE_PLUS]
     else:
-        params['basemap'] = shareImg.getImage(req['app'], req['adType'])
+        params['conf'] = info_hash['common']['config'][req['phone_type']]
+        params['config'] = info_hash[req['app']]['config'][req['phone_type']]
+        params['basemap'] = shareImg.getImage(req['app'], req['adType'], phone_type_hash[req['phone_type']])
         if None == params['basemap']:
             ok = False
             logger.warning('No basemap for this request')

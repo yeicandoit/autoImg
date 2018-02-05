@@ -9,16 +9,16 @@ logging.config.fileConfig('conf/log.conf')
 logger = logging.getLogger('main')
 
 path_hash = {
-    'weixin_banner':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/582-166",
-    'weixin_image_text':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/114-114",
-    'weixin_fine_big':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/微信/960-540",
-    'QQWeather':u"/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/QQ天气/582-166",
-    'qnews_feeds_big':u'/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/腾讯新闻/大图',
-    'qnews_feeds_small':u'/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/腾讯新闻/小图',
-    'qnews_feeds_multi':u'/Volumes/HuaDong/02A新点位当天素材收集/iPhone/%s/腾讯新闻/组图',
+    'weixin_banner':u"/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/微信/582-166",
+    'weixin_image_text':u"/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/微信/114-114",
+    'weixin_fine_big':u"/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/微信/960-540",
+    'QQWeather':u"/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/QQ天气/582-166",
+    'qnews_feeds_big':u'/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/腾讯新闻/大图',
+    'qnews_feeds_small':u'/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/腾讯新闻/小图',
+    'qnews_feeds_multi':u'/Volumes/HuaDong/02A新点位当天素材收集/%s/%s/腾讯新闻/组图',
 }
 
-def getImage(app, adtype = None):
+def getImage(app, adtype = None, phone_type = 'iPhone'):
     path_key = app
     if None != adtype and '' != adtype:
         path_key = app + '_' + adtype
@@ -28,7 +28,7 @@ def getImage(app, adtype = None):
 
     # get image from directory today or 4days before
     for i in range(30):
-        path = path_hash[path_key] % time.strftime('%Y.%m.%d', time.localtime(time.time() - i*24*60*60))
+        path = path_hash[path_key] % (phone_type, time.strftime('%Y.%m.%d', time.localtime(time.time() - i*24*60*60)))
         if not os.path.exists(path):
             logger.warning("path does not exist:%s", path)
             continue

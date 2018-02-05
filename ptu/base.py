@@ -536,7 +536,8 @@ class Base:
 
         return ok, top, bottom
 
-    def getImgWH(self, img):
+    @staticmethod
+    def getImgWH(img):
         img_gray = cv2.imread(img, 0)
         w, h = img_gray.shape[::-1]
         return w, h

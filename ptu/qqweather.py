@@ -36,9 +36,13 @@ class QQWeatherBg(Base):
         img_color = cv2.imread(self.background)
         img_color[ad_top_left_y:ad_top_left_y+ad_height, ad_top_left_x:ad_top_left_x + ad_width] = ad
 
+        # Add header image
         img_header_path = self.config.get('qqweather', 'img_header')
-        _, img_color = self.updateHeader(img_color, img_header_path, self.time, self.battery, self.network, self.cf,
-                                         'header')
+        header_width, header_height = self.getImgWH(img_header_path)
+        img_color[0:header_height, 0:header_width] = cv2.imread(img_header_path)
+        self.setBattery(img_color, self.battery, self.cf, 'header')
+        cv2.imwrite('tmp_img/tmp.png', img_color)
+        img_color = self.drawTime('tmp_img/tmp.png', self.time, self.config, 'qqweather')
         cv2.imwrite(self.composite_ads_path, img_color)
 
 if __name__ == '__main__':

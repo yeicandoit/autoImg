@@ -45,6 +45,7 @@ info_hash = {
         'subject':u'-QQ天气-',
         'config':{
             IPHONE:'conf/qqweather_iphone6.conf',
+            IPHONE_PLUS: 'conf/qqweather_iphone-plus.conf',
         },
     },
     'qnews':{

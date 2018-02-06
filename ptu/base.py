@@ -14,6 +14,7 @@ logging.config.fileConfig('/Users/iclick/wangqiang/autoImg/conf/log.conf')
 class Base:
     TYPE_ARG = 1
     TYPE_START = 4
+    TYPE_SIZE = 10
 
     def __init__(self, time, battery, img_paste_ad, ad_type='banner',
                  network='wifi', desc='', doc='', save_path='./ok.png',
@@ -177,6 +178,25 @@ class Base:
         img[h:h1, w:w1] = cv2.imread(self.cf.get(image_cf_path, time[4]))
 
         return True, img
+
+    def drawTime(self, img, mtime, config, section):
+        assert len(mtime) == 5, 'Do not support this time format'
+        time_font = self.cf.get('header', 'time_font')
+        time_size = config.getint(section, 'time_size')
+        time_color = self.parseArrStr(config.get(section, 'time_color'), ',')
+        time_pos = self.parseArrStr(config.get(section, 'time_pos'), ',')
+        time_pos_1 = self.parseArrStr(config.get(section, 'time_pos_1'), ',')
+        time_pos_2 = self.parseArrStr(config.get(section, 'time_pos_2'), ',')
+
+        im = Image.open(img)
+        draw = ImageDraw.Draw(im)
+        ttfont = ImageFont.truetype(time_font, time_size)
+        draw.text(time_pos, mtime[0:2], fill=(time_color[0], time_color[1], time_color[2]), font=ttfont)
+        draw.text(time_pos_1, mtime[2], fill=(time_color[0], time_color[1], time_color[2]), font=ttfont)
+        draw.text(time_pos_2, mtime[3:], fill=(time_color[0], time_color[1], time_color[2]), font=ttfont)
+
+        im.save('tmp_img/tmp.png')
+        return cv2.imread('tmp_img/tmp.png')
 
     def setTime(self, img, mtime, config, section):
         if len(mtime) < 5:
@@ -597,14 +617,14 @@ class Base:
         draw = ImageDraw.Draw(im)
         if '' != doc:
             ttfont = ImageFont.truetype(font, doc_size)
-            if len(self.doc) <= doc_1stline_max_len:
-                draw.text(doc_pos, self.doc, fill=(doc_color[0], doc_color[1], doc_color[2]), font=ttfont)
+            if len(doc) <= doc_1stline_max_len:
+                draw.text(doc_pos, doc, fill=(doc_color[0], doc_color[1], doc_color[2]), font=ttfont)
             else:
                 doc_pos1 = (doc_pos[0], doc_pos[1] + word_height)
-                draw.text(doc_pos, self.doc[:doc_1stline_max_len],
+                draw.text(doc_pos, doc[:doc_1stline_max_len],
                           fill=(doc_color[0], doc_color[1], doc_color[2]),
                           font=ttfont)
-                draw.text(doc_pos1, self.doc[doc_1stline_max_len:],
+                draw.text(doc_pos1, doc[doc_1stline_max_len:],
                           fill=(doc_color[0], doc_color[1], doc_color[2]),
                           font=ttfont)
         if '' != desc:
@@ -617,11 +637,20 @@ class Base:
     def start(self):
         pass
 
+    def checkSize(self):
+        w, h = self.getImgWH(self.background)
+        ok = w == self.screen_width and h == self.screen_height
+        return ok,'Basemap size is not correct'
+
+
     def checkArgs(self):
         return True, None
 
     def compositeImage(self):
         try:
+            ok, msg = self.checkSize()
+            if not ok:
+                return ok, Base.TYPE_SIZE, msg
             ok, msg = self.checkArgs()
             if not ok:
                 return ok, Base.TYPE_ARG, msg
